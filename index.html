@@ -335,8 +335,8 @@ function pgSet(){return`<div class="top"><button class="btn g" id="burger" data-
  <div class="card"><h3>Custom lists</h3><p class="meta">Product types: ${types().map(esc).join(', ')}</p><p class="meta">Expense categories: ${cats().map(esc).join(', ')}</p></div>`}
 
 /* ===== modal + confirm ===== */
-function modal(html,sm){$('#modal').innerHTML=`<div class="mbox ${sm?'sm':''}">${html}</div>`;$('#modal').classList.add('on');hydrate($('#modal'))}
-function closeModal(){$('#modal').classList.remove('on');$('#modal').innerHTML=''}
+function modal(html,sm){$('#modal').innerHTML=`<div class="mbox ${sm?'sm':''}">${html}</div>`;$('#modal').classList.remove('loading');$('#modal').classList.add('on');hydrate($('#modal'))}
+function closeModal(){$('#modal').classList.remove('on','loading');$('#modal').innerHTML=''}
 function ask(msg,ok='Delete'){return new Promise(res=>{const d=$('#dlg');d.innerHTML=`<div class="mbox sm"><h3>Please confirm</h3><p>${esc(msg)}</p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" id="dn">Cancel</button><button class="btn d" id="dy">${ok}</button></div></div>`;d.classList.add('on');
  const end=v=>{d.classList.remove('on');d.innerHTML='';res(v)};$('#dn').onclick=()=>end(false);$('#dy').onclick=()=>end(true)})}
 const mh=t=>`<div class="mh"><h2>${t}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`;
