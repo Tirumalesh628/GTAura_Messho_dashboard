@@ -97,7 +97,7 @@ const fdate=s=>s?new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'sh
 const BASE_TYPES=['Earrings','Bangles','Invisible Chains','Necklaces','Bracelets','Rings','Pendants','Anklets','Jewellery Sets','Other'];
 const BASE_CATS=['Product Purchase','Raw Materials','Packaging','Shipping','Meesho Charges','Advertising','Instagram Advertising','Equipment','Tools','Electricity','Internet','Transportation','Labour','Rent','Other'];
 const ORDER_ST=['New','Confirmed','Packed','Shipped','Delivered','Cancelled','Returned'], PAY_ST=['Paid','Pending','Refunded'];
-const NAV=[['dash','🏠','Dashboard'],['cat','📦','Catalogs'],['exp','💰','Expenses'],['sales','🛒','Sales / Orders'],['rep','📊','Reports'],['set','⚙️','Settings']];
+const NAV=[['dash','🏠','Dashboard'],['cat','📦','Catalogs'],['exp','💰','Expenses'],['sales','🛒','Sales / Orders'],['ref','🎨','Design Refs'],['rep','📊','Reports'],['set','⚙️','Settings']];
 const generateUniqueId=p=>{const d=new Date();return p+'-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+Array.from(crypto.getRandomValues(new Uint8Array(3)),b=>b.toString(16).padStart(2,'0')).join('').toUpperCase()};
 const sanitizeFileName=s=>String(s).replace(/[<>:"\/\\|?*\x00-\x1f]/g,'').trim().replace(/\s+/g,'_').replace(/[. ]+$/,'').slice(0,60)||'Item';
 const extOf=n=>(n.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -110,7 +110,7 @@ const clientId=()=>CONFIG_CLIENT_ID.startsWith('YOUR_')?(localStorage.getItem('m
 const SCOPE='https://www.googleapis.com/auth/drive.file', API='https://www.googleapis.com/drive/v3', UP='https://www.googleapis.com/upload/drive/v3', FOLDER='application/vnd.google-apps.folder';
 
 /* ===== state ===== */
-let state={products:[],expenses:[],sales:[],settings:{customTypes:[],customCats:[]}};
+let state={products:[],expenses:[],sales:[],designs:[],settings:{customTypes:[],customCats:[]}};
 let busy=false;const G={phase:'boot',err:'',authLost:false,rootId:'',syncing:false,last:0};
 const ui={page:'dash',q:{cat:'',exp:'',sale:''},type:'',f:{exp:{p:'all'},rep:{p:'month'}}};
 const types=()=>[...BASE_TYPES,...state.settings.customTypes.filter(t=>!BASE_TYPES.includes(t))];
@@ -122,13 +122,13 @@ const hasTok=()=>tok&&Date.now()<tokExp-60000;
 function initAuth(){tc=google.accounts.oauth2.initTokenClient({client_id:clientId(),scope:SCOPE,
  callback:r=>pend&&pend.ok(r),error_callback:e=>pend&&pend.err(e)})}
 function getToken(){if(hasTok())return Promise.resolve(tok);if(tokP)return tokP;
- tokP=new Promise((res,rej)=>{pend={ok:r=>{if(r.error)return rej(new Error(r.error_description||r.error));tok=r.access_token;tokExp=Date.now()+(+r.expires_in||3600)*1000;localStorage.setItem('mbd_gd','1');localStorage.setItem('mbd_tok',JSON.stringify({t:tok,e:tokExp}));res(tok)},
+ tokP=new Promise((res,rej)=>{pend={ok:r=>{if(r.error)return rej(new Error(r.error_description||r.error));tok=r.access_token;tokExp=Date.now()+(+r.expires_in||3600)*1000;localStorage.setItem('mbd_gd','1');res(tok)},
   err:e=>rej(new Error(e.type==='popup_closed'?'Sign-in window was closed.':e.type==='popup_failed_to_open'?'Pop-up blocked. Allow pop-ups for this site and try again.':(e.message||e.type||'Sign-in failed')))};
   tc.requestAccessToken({prompt:''})}).finally(()=>{tokP=null});return tokP}
 async function gfetch(url,opt={},retry=true){
  let t;try{t=await getToken()}catch(e){if(G.phase==='ready'&&!G.authLost){G.authLost=true;render()}throw new Error('Google session expired. Tap Reconnect and try again.')}
  const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
- if(r.status===401&&retry){tok=null;localStorage.removeItem('mbd_tok');return gfetch(url,opt,false)}
+ if(r.status===401&&retry){tok=null;return gfetch(url,opt,false)}
  if(!r.ok){let m='';try{m=(await r.json()).error.message}catch{}throw new Error(m||'Drive error '+r.status)}return r}
 
 /* ===== Drive helpers ===== */
@@ -162,24 +162,24 @@ const saved={};let pq=Promise.resolve();
 const persist=()=>(pq=pq.then(doPersist).catch(()=>{}));
 async function doPersist(){if(G.phase!=='ready')return;
  try{const md=await ensureFolder(await getRoot(),'_MeeshoDashboard');
-  const files={products:state.products,expenses:state.expenses,sales:state.sales,settings:state.settings};
+  const files={products:state.products,expenses:state.expenses,sales:state.sales,designs:state.designs,settings:state.settings};
   for(const n in files){const s=JSON.stringify(files[n]);if(s!==saved[n]){await writeJSON(md,n+'.json',files[n]);saved[n]=s}}}
  catch(e){toast('Could not save to Google Drive: '+e.message,'err')}}
 async function loadFromDrive(){
  const md=await ensureFolder(await getRoot(),'_MeeshoDashboard');
- const [pl,el,sl,st]=await Promise.all(['products','expenses','sales','settings'].map(n=>readJSON(md,n+'.json')));
+ const [pl,el,sl,st,dl]=await Promise.all(['products','expenses','sales','settings','designs'].map(n=>readJSON(md,n+'.json')));
  state.products=(Array.isArray(pl)?pl:[]).map(p=>({...p,photos:(p.photos||[]).filter(m=>m&&m.id),videos:(p.videos||[]).filter(m=>m&&m.id)}));
- state.expenses=Array.isArray(el)?el:[];state.sales=Array.isArray(sl)?sl:[];
+ state.expenses=Array.isArray(el)?el:[];state.sales=Array.isArray(sl)?sl:[];state.designs=Array.isArray(dl)?dl:[];
  state.settings={customTypes:[],customCats:[],...(st||{})};
- for(const n of['products','expenses','sales','settings'])saved[n]=JSON.stringify(state[n]);G.last=Date.now()}
+ for(const n of['products','expenses','sales','designs','settings'])saved[n]=JSON.stringify(state[n]);G.last=Date.now()}
 
 /* ===== sign-in / sync / init ===== */
 async function connectDrive(){G.phase='loading';render();
  try{await loadFromDrive();G.phase='ready';render()}catch(e){G.phase='signin';G.err='Could not load from Google Drive: '+e.message;render()}}
 async function signIn(){G.err='';try{await getToken();G.authLost=false;if(G.phase==='ready'){render();return toast('Reconnected')}await connectDrive()}
  catch(e){if(G.phase!=='ready')G.phase='signin';G.err=e.message;render()}}
-function signOut(){tok=null;tokExp=0;localStorage.removeItem('mbd_gd');localStorage.removeItem('mbd_tok');for(const k in fc)delete fc[k];G.rootId='';
- state={products:[],expenses:[],sales:[],settings:{customTypes:[],customCats:[]}};G.phase='signin';G.err='';render()}
+function signOut(){tok=null;tokExp=0;localStorage.removeItem('mbd_gd');for(const k in fc)delete fc[k];G.rootId='';
+ state={products:[],expenses:[],sales:[],designs:[],settings:{customTypes:[],customCats:[]}};G.phase='signin';G.err='';render()}
 async function syncNow(manual){if(busy||G.syncing||(!manual&&!hasTok()))return;G.syncing=true;
  try{await pq;await loadFromDrive();render();manual&&toast('Synced with Google Drive')}catch(e){manual&&toast('Sync failed: '+e.message,'err')}G.syncing=false}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.phase==='ready'&&Date.now()-G.last>120000&&!$('#modal').classList.contains('on')&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))syncNow(false)});
@@ -187,9 +187,7 @@ const waitGIS=()=>new Promise(r=>{let n=0;const t=setInterval(()=>{if(window.goo
 async function initApp(){
  if(!clientId()){G.phase='nocfg';return render()}
  if(!await waitGIS()){G.phase='signin';G.err='Could not load Google sign-in. Check your internet connection.';return render()}
- initAuth();G.phase='signin';
- try{const o=JSON.parse(localStorage.getItem('mbd_tok'));if(o&&o.e>Date.now()+60000){tok=o.t;tokExp=o.e}}catch{}
- render();
+ initAuth();G.phase='signin';render();
  if(localStorage.getItem('mbd_gd')){try{await getToken();await connectDrive()}catch{G.phase='signin';render()}}}
 
 /* ===== media download ===== */
@@ -230,7 +228,7 @@ function render(){
  <div class="ver">Meesho Business Dashboard<br>v2.0 · Google Drive</div></aside>
  <nav class="bnav">${NAV.map(n=>`<a class="${p===n[0]?'on':''}" data-act="go" data-p="${n[0]}" title="${n[2]}">${n[1]}</a>`).join('')}</nav>
  <main>${G.authLost?'<div class="banner">Your Google session expired. <button class="btn s" data-act="signin">Reconnect</button></div>':''}
- ${({dash:pgDash,cat:pgCat,exp:pgExp,sales:pgSales,rep:pgRep,set:pgSet})[p]()}</main>`;
+ ${({dash:pgDash,cat:pgCat,exp:pgExp,sales:pgSales,ref:pgRef,rep:pgRep,set:pgSet})[p]()}</main>`;
  hydrate()}
 
 const showPage=p=>{ui.page=p;render();scrollTo(0,0)};
@@ -268,7 +266,7 @@ function pgDash(){
  const pend=state.sales.filter(o=>o.payStatus==='Pending'&&activeOrder(o)).reduce((s,o)=>s+num(o.finalAmount),0);
  const months=[];for(let i=5;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);months.push(d.getFullYear()+'-'+pad(d.getMonth()+1))}
  const mv=months.map(m=>[m,state.sales.filter(o=>activeOrder(o)&&o.date.startsWith(m)).reduce((s,o)=>s+num(o.finalAmount),0)]);const mx=Math.max(...mv.map(x=>x[1]),1);
- return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Dashboard</h2><button class="btn g" data-act="dlall">⬇ Download All Media</button><button class="btn" data-act="addcat">+ Add Catalog</button></div>
+ return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Dashboard</h2><button class="btn g" data-act="dlall">⬇ Download All Media</button><button class="btn g" data-act="addref">🎨 Add Design Reference</button><button class="btn" data-act="addcat">+ Add Catalog</button></div>
  <div class="grid">${stat('Total Products',P.length)}${stat('Total Catalogs (types)',new Set(P.map(p=>p.productType)).size)}${stat('Product Purchase Value',inr(buy))}${stat('Total Selling Value',inr(sell))}
  ${stat('Total Expenses',inr(all.expenses))}${stat('Profit Potential (unsold stock)',inr(sell-buy),sell-buy<0?'neg':'')}${stat('Total Sales',inr(all.revenue))}${stat('Pending Payments',inr(pend),pend?'neg':'')}${stat('Net Profit (actual)',inr(all.net),all.net<0?'neg':'',1)}</div>
  <h3 style="margin:26px 0 12px">Available Products</h3>${prodCards(byNew(P))}
@@ -288,7 +286,7 @@ function prodCards(list){
 /* ----- Catalog page ----- */
 function pgCat(){
  const q=ui.q.cat.toLowerCase(),list=byNew(state.products).filter(p=>(!ui.type||p.productType===ui.type)&&(!q||[p.productName,p.productType,p.catalogId,p.folderName].join(' ').toLowerCase().includes(q)));
- return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Catalogs</h2><button class="btn" data-act="addcat">+ Add Catalog</button></div>
+ return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Catalogs</h2><button class="btn g" data-act="addref">🎨 Add Design Reference</button><button class="btn" data-act="addcat">+ Add Catalog</button></div>
  <div class="bar"><input type="search" id="q-cat" data-on="q" data-k="cat" placeholder="Search name, type or catalog ID" value="${esc(ui.q.cat)}">
  <select data-on="typef"><option value="">All types</option>${types().map(t=>`<option ${ui.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>${prodCards(list)}`}
 
@@ -337,8 +335,8 @@ function pgSet(){return`<div class="top"><button class="btn g" id="burger" data-
  <div class="card"><h3>Custom lists</h3><p class="meta">Product types: ${types().map(esc).join(', ')}</p><p class="meta">Expense categories: ${cats().map(esc).join(', ')}</p></div>`}
 
 /* ===== modal + confirm ===== */
-function modal(html,sm){$('#modal').innerHTML=`<div class="mbox ${sm?'sm':''}">${html}</div>`;$('#modal').classList.remove('loading');$('#modal').classList.add('on');hydrate($('#modal'))}
-function closeModal(){$('#modal').classList.remove('on','loading');$('#modal').innerHTML=''}
+function modal(html,sm){$('#modal').innerHTML=`<div class="mbox ${sm?'sm':''}">${html}</div>`;$('#modal').classList.add('on');hydrate($('#modal'))}
+function closeModal(){$('#modal').classList.remove('on');$('#modal').innerHTML=''}
 function ask(msg,ok='Delete'){return new Promise(res=>{const d=$('#dlg');d.innerHTML=`<div class="mbox sm"><h3>Please confirm</h3><p>${esc(msg)}</p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" id="dn">Cancel</button><button class="btn d" id="dy">${ok}</button></div></div>`;d.classList.add('on');
  const end=v=>{d.classList.remove('on');d.innerHTML='';res(v)};$('#dn').onclick=()=>end(false);$('#dy').onclick=()=>end(true)})}
 const mh=t=>`<div class="mh"><h2>${t}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`;
@@ -494,12 +492,54 @@ function addSale(){
  persist();closeModal();render();toast('Order saved')}
 async function deleteSale(id){if(!await ask('Delete order '+id+'?'))return;state.sales=state.sales.filter(o=>o.orderId!==id);await persist();render();toast('Order deleted')}
 
+/* ===== DESIGN REFERENCES ===== */
+let rf=null;
+function pgRef(){
+ const list=byNew(state.designs);
+ return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Design References</h2><button class="btn" data-act="addref">+ Add Design Reference</button></div>
+ ${list.length?`<div class="pcards">${list.map(r=>`<div class="card pc"><div class="im">${r.thumb?`<img src="${r.thumb}" alt="">`:'🎨'}</div><div class="bd"><h3>${esc(r.title)}</h3><div class="meta">📷 ${r.files.length} photo${r.files.length===1?'':'s'} · ${fdate(r.createdAt)}</div>${r.note?`<div class="meta" style="margin-top:6px">${esc(r.note)}</div>`:''}</div>
+ <div class="ac"><button class="btn s" data-act="vref" data-id="${r.refId}">View</button><button class="btn d s" data-act="dref" data-id="${r.refId}">Delete</button></div></div>`).join('')}</div>`
+ :`<div class="card">${empty('🎨','No design references yet','Tap "Add Design Reference" to upload inspiration photos. They are saved in your Google Drive.')}</div>`}`}
+function openRefForm(){
+ rf={files:[]};
+ modal(`${mh('Add Design Reference')}
+ <div class="fld"><label>Title (optional)</label><input id="r-title" placeholder="e.g. Temple jhumka inspiration"></div>
+ <div class="fld"><label>Notes (optional)</label><textarea id="r-note" rows="2" placeholder="Colours, stones, size, where you saw it…"></textarea></div>
+ <div class="fld"><label>Upload photos *</label><div class="dz" data-k="refs" data-act="browse">📷 Tap to choose photos, or drag &amp; drop</div><input type="file" id="in-refs" accept="image/*" multiple hidden data-on="reffiles"><div class="mg" id="g-refs"></div></div>
+ <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" data-act="close">Cancel</button><button class="btn" id="saveref" data-act="saveref">Save to Drive</button></div>`);
+ drawRefs()}
+function drawRefs(){const el=$('#g-refs');if(!el)return;
+ el.innerHTML=rf.files.map((m,i)=>{if(!m.url)m.url=URL.createObjectURL(m.file);
+  return`<div class="mi"><img src="${m.url}" alt=""><div class="mb"><span></span><button data-act="rrm" data-i="${i}" title="Remove">✕</button></div></div>`}).join('')||'<div class="meta">No photos added yet.</div>'}
+function addRefFiles(files){if(!rf)return;let n=0;for(const f of files)if(/^image\//.test(f.type)){rf.files.push({file:f});n++}
+ if(n<files.length)toast('Some files were skipped (not images).','err');drawRefs()}
+async function saveRef(){
+ if(busy)return;if(!rf||!rf.files.length)return toast('Please upload at least one photo.','err');
+ busy=true;const btn=$('#saveref');btn.textContent='Saving…';$('#modal').classList.add('loading');
+ try{const now=new Date().toISOString(),id=generateUniqueId('REF'),title=$('#r-title').value.trim()||'Design '+fdate(now),note=$('#r-note').value.trim();
+  const dir=await ensureFolder(await getRoot(),'Design References'),base=sanitizeFileName(title),out=[];
+  for(let i=0;i<rf.files.length;i++){btn.textContent=`Uploading ${i+1}/${rf.files.length}…`;
+   const nm=base+'_'+id.slice(-6)+'_'+pad(i+1)+'.'+extOf(rf.files[i].file.name),f=await uploadFile(dir,nm,rf.files[i].file);out.push({id:f.id,name:nm})}
+  state.designs.push({refId:id,title,note,createdAt:now,thumb:await makeThumb(rf.files[0].file),files:out});
+  await persist();closeModal();rf=null;ui.page==='ref'||showPage('ref');render();toast('Design reference saved to Google Drive')}
+ catch(e){toast('Save failed: '+e.message,'err');$('#saveref')&&($('#saveref').textContent='Save to Drive');$('#modal').classList.remove('loading')}
+ busy=false}
+function viewRef(id){const r=state.designs.find(x=>x.refId===id);if(!r)return;
+ modal(`${mh(esc(r.title))}${r.note?`<pre class="pd">${esc(r.note)}</pre><br>`:''}<div class="gal" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">${r.files.map(f=>`<div class="gi"><img data-fid="${esc(f.id)}" data-act="zoomimg" alt="">
+  <button class="dlb" data-act="dlf" data-fid="${esc(f.id)}" data-name="${esc(f.name)}" title="Download">⬇</button></div>`).join('')}</div>
+ <div class="meta" style="margin-top:12px">Saved in Drive: MeeshoBusiness/Design References · ${fdate(r.createdAt)}</div>
+ <div style="display:flex;gap:8px;margin-top:16px"><button class="btn d" data-act="dref" data-id="${id}">Delete</button></div>`)}
+async function deleteRef(id){const r=state.designs.find(x=>x.refId===id);if(!r)return;
+ if(!await ask('Delete this design reference? Its photos will be moved to your Google Drive trash.'))return;
+ for(const f of r.files)await trash(f.id).catch(()=>{});
+ state.designs=state.designs.filter(x=>x.refId!==id);await persist();closeModal();render();toast('Design reference deleted')}
+
 /* ===== BACKUP / CSV ===== */
 function exportBackup(){download('meesho-business-backup.json',JSON.stringify({app:'meesho-dashboard',version:1,exportedAt:new Date().toISOString(),data:{...state,products:state.products.map(({thumb,...p})=>p)}},null,2));toast('Backup exported')}
 function importBackup(file){const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result).data;if(!d||!Array.isArray(d.products))throw 0;
  if(!await ask('Merge this backup into your current data? Records with the same ID are replaced by the backup version.','Import'))return;
  const mg=(a,b,k)=>{const m=new Map(a.map(x=>[x[k],x]));(b||[]).forEach(x=>m.set(x[k],{...m.get(x[k]),...x}));return[...m.values()]};
- state.products=mg(state.products,d.products,'catalogId');state.expenses=mg(state.expenses,d.expenses,'expenseId');state.sales=mg(state.sales,d.sales,'orderId');
+ state.products=mg(state.products,d.products,'catalogId');state.expenses=mg(state.expenses,d.expenses,'expenseId');state.sales=mg(state.sales,d.sales,'orderId');state.designs=mg(state.designs,d.designs,'refId');
  state.settings={customTypes:[...new Set([...state.settings.customTypes,...(d.settings?.customTypes||[])])],customCats:[...new Set([...state.settings.customCats,...(d.settings?.customCats||[])])]};
  await persist();render();toast('Backup imported')}catch{toast('That file is not a valid backup.','err')}};r.readAsText(file)}
 function exportCSV(k){const defs={products:['catalogId','productName','productType','purchasePrice','sellingPrice','expectedProfit','profitMargin','status','createdAt','folderName'],
@@ -510,7 +550,7 @@ function exportCSV(k){const defs={products:['catalogId','productName','productTy
 /* ===== events ===== */
 const acts={
  signin:signIn,signout:signOut,sync:()=>syncNow(true),dlall:()=>downloadMedia(state.products),dlp:el=>downloadMedia(state.products.filter(p=>p.catalogId===el.dataset.id)),dlf:el=>downloadOne(el.dataset.fid,el.dataset.name),lv:loadVideo,gtaren:renameToGta,gdopen:()=>G.rootId&&window.open('https://drive.google.com/drive/folders/'+G.rootId,'_blank'),savecid:()=>{const v=$('#cid').value.trim();if(!v)return toast('Paste your Client ID.','err');localStorage.setItem('mbd_cid',v);location.reload()},close:closeModal,burger:()=>$('#side').classList.toggle('open'),
-  go:el=>showPage(el.dataset.p),addcat:()=>openCatalogForm(),savecat:saveCatalog,view:el=>viewProduct(el.dataset.id),edit:el=>openCatalogForm(el.dataset.id),del:el=>deleteCatalog(el.dataset.id),openf:el=>openFolder(el.dataset.id),
+  go:el=>showPage(el.dataset.p),addref:()=>openRefForm(),saveref:saveRef,vref:el=>viewRef(el.dataset.id),dref:el=>deleteRef(el.dataset.id),rrm:el=>{rf.files.splice(+el.dataset.i,1);drawRefs()},zoomimg:el=>el.src&&window.open(el.src,'_blank'),addcat:()=>openCatalogForm(),savecat:saveCatalog,view:el=>viewProduct(el.dataset.id),edit:el=>openCatalogForm(el.dataset.id),del:el=>deleteCatalog(el.dataset.id),openf:el=>openFolder(el.dataset.id),
  dljson:el=>{const{thumb,...p}=state.products.find(x=>x.catalogId===el.dataset.id);download('product-'+p.catalogId+'.json',JSON.stringify(p,null,2))},
  gal:el=>{const m=$('#mainim');if(m&&el.src){m.src=el.src}},
  browse:el=>$('#in-'+el.dataset.k).click(),
@@ -525,6 +565,7 @@ const acts={
 const ons={
  q:el=>{ui.q[el.dataset.k]=el.value;render();const n=$('#'+el.id);n.focus();n.setSelectionRange(n.value.length,n.value.length)},
  typef:el=>{ui.type=el.value;render()},
+ reffiles:el=>{addRefFiles([...el.files]);el.value=''},
  fd:el=>{ui.f[el.dataset.k][el.dataset.w]=el.value;render()},
  calc:calcForm,
  typesel:el=>{if(el.value!=='__new')return;const t=(prompt('New product type name:')||'').trim();
@@ -544,10 +585,8 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
  const textual=el.type==='search'||el.type==='number'||el.type==='text';if(t==='input'&&!textual&&el.dataset.on!=='fd')return;if(t==='change'&&textual&&el.dataset.on!=='sprod'&&el.dataset.on!=='fd')return;ons[el.dataset.on]?.(el)}));
 document.addEventListener('dragover',e=>{const z=e.target.closest('.dz');if(z){e.preventDefault();z.classList.add('over')}});
 document.addEventListener('dragleave',e=>e.target.closest?.('.dz')?.classList.remove('over'));
-document.addEventListener('drop',e=>{const z=e.target.closest('.dz');if(z){e.preventDefault();z.classList.remove('over');addFiles(z.dataset.k,[...e.dataTransfer.files])}else if(e.dataTransfer?.files.length)e.preventDefault()});
+document.addEventListener('drop',e=>{const z=e.target.closest('.dz');if(z){e.preventDefault();z.classList.remove('over');z.dataset.k==='refs'?addRefFiles([...e.dataTransfer.files]):addFiles(z.dataset.k,[...e.dataTransfer.files])}else if(e.dataTransfer?.files.length)e.preventDefault()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#dlg').classList.contains('on'))closeModal()});
-/* renew the Google token on the user's next tap when it is about to expire (a quick pop-up flash, no login screen) */
-document.addEventListener('click',()=>{if(G.phase==='ready'&&!tokP&&Date.now()>tokExp-300000&&Date.now()-(G.tried||0)>60000){G.tried=Date.now();getToken().then(()=>{G.authLost=false}).catch(()=>{})}},true);
 initApp();
 </script>
 </body>
