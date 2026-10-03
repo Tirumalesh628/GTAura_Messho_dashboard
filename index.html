@@ -74,6 +74,13 @@ pre.pd{white-space:pre-wrap;background:#faf6fb;padding:10px;border-radius:10px;f
 .gi{position:relative}.gi .dlb{position:absolute;right:4px;bottom:4px;border:0;border-radius:6px;background:rgba(255,255,255,.92);cursor:pointer;padding:2px 7px;font-size:13px}
 .vph{aspect-ratio:16/10;display:grid;place-items:center;text-align:center;background:#f1e4f4;border-radius:8px;cursor:pointer;font-size:13px;padding:6px;color:var(--plum)}
 .pbar{height:10px;background:#efe5f2;border-radius:99px;overflow:hidden;margin:14px 0}.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--plum),var(--rose));transition:width .2s}
+@media(max-width:700px){
+ main{padding:14px 10px 84px}.top{gap:8px;margin-bottom:14px}.top h2{font-size:21px}.top .btn{padding:8px 11px;font-size:14px}
+ .grid{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:12px}.stat .l{font-size:12px}.stat .v{font-size:19px}.stat.hero{grid-column:1/-1}
+ .pcards{grid-template-columns:repeat(2,1fr);gap:10px}.pc .im{font-size:30px}.pc .bd{padding:9px 10px;font-size:13px}.pc h3{font-size:14px;line-height:1.25}.pc .meta{font-size:11px}
+ .pc .ac{padding:0 10px 10px;gap:5px}.pc .ac .btn{flex:1 1 42%;padding:6px 4px;font-size:12px}
+ .two{grid-template-columns:1fr}input,select,textarea{font-size:16px}.bar input[type=search]{max-width:none;flex:1 1 100%}
+}
 </style>
 </head>
 <body>
@@ -271,14 +278,14 @@ function prodCards(list){
  if(!list.length)return`<div class="card">${empty('💎','No catalogs yet','Add your first product to see it here.')}</div>`;
  return`<div class="pcards">${list.map(p=>{const pr=calculateProfit(p.purchasePrice,p.sellingPrice),ph=(p.photos||[]),vd=(p.videos||[]);
  const img=p.thumb?`<img src="${p.thumb}" alt="">`:'💎';
- return`<div class="card pc"><div class="im">${img}</div><div class="bd"><h3>${esc(p.productName)}</h3><div class="meta">${esc(p.productType)} · ${esc(p.catalogId)}</div>
+ return`<div class="card pc"><div class="im">${img}</div><div class="bd"><h3>${esc(p.productName)}</h3><div class="meta">${esc(p.productType)} · ${esc(p.gta?gtaCode(p.gta):p.catalogId)}</div>
  <div style="margin:8px 0">Buy ${inr(p.purchasePrice)} → Sell <b>${inr(p.sellingPrice)}</b><br><span class="${pr.profit<0?'neg':'pos'}">Profit ${inr(pr.profit)} (${pr.margin.toFixed(1)}%)</span></div>
  <div class="meta">📷 ${ph.length} photos · 🎬 ${vd.length} videos<br>Added ${fdate(p.createdAt)}</div><div style="margin-top:6px"><span class="tag ${p.status==='Active'?'ok':'w'}">${esc(p.status)}</span></div></div>
- <div class="ac"><button class="btn s" data-act="view" data-id="${p.catalogId}">View</button><button class="btn g s" data-act="edit" data-id="${p.catalogId}">Edit</button><button class="btn g s" data-act="dlp" data-id="${p.catalogId}">⬇ Media</button><button class="btn g s" data-act="openf" data-id="${p.catalogId}">Drive</button><button class="btn d s" data-act="del" data-id="${p.catalogId}">Delete</button></div></div>`}).join('')}</div>`}
+ <div class="ac"><button class="btn s" data-act="view" data-id="${p.catalogId}">View</button><button class="btn g s" data-act="edit" data-id="${p.catalogId}">Edit</button><button class="btn g s" data-act="dlp" data-id="${p.catalogId}">⬇ Media</button><button class="btn d s" data-act="del" data-id="${p.catalogId}">Delete</button></div></div>`}).join('')}</div>`}
 
 /* ----- Catalog page ----- */
 function pgCat(){
- const q=ui.q.cat.toLowerCase(),list=byNew(state.products).filter(p=>(!ui.type||p.productType===ui.type)&&(!q||[p.productName,p.productType,p.catalogId].join(' ').toLowerCase().includes(q)));
+ const q=ui.q.cat.toLowerCase(),list=byNew(state.products).filter(p=>(!ui.type||p.productType===ui.type)&&(!q||[p.productName,p.productType,p.catalogId,p.folderName].join(' ').toLowerCase().includes(q)));
  return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Catalogs</h2><button class="btn" data-act="addcat">+ Add Catalog</button></div>
  <div class="bar"><input type="search" id="q-cat" data-on="q" data-k="cat" placeholder="Search name, type or catalog ID" value="${esc(ui.q.cat)}">
  <select data-on="typef"><option value="">All types</option>${types().map(t=>`<option ${ui.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>${prodCards(list)}`}
@@ -321,7 +328,7 @@ function pgRep(){
 function pgSet(){return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Settings</h2></div>
  <div class="card" style="margin-bottom:14px"><h3>Google Drive storage</h3><p>All data, photos, videos and bills are stored in your Google Drive, folder <b>MeeshoBusiness</b> <span class="tag ok">Connected</span></p>
  <p class="meta">Sign in with the same Google account on any phone or computer to see the same data. The app can only see files it created itself, so please do not rename or move the MeeshoBusiness folder, and add media through the app rather than directly in Drive.</p>
- <div class="bar"><button class="btn" data-act="sync">🔄 Sync now</button><button class="btn g" data-act="gdopen">Open in Drive</button><button class="btn g" data-act="dlall">⬇ Download all photos &amp; videos</button><button class="btn d" data-act="signout">Sign out</button></div></div>
+ <div class="bar"><button class="btn" data-act="sync">🔄 Sync now</button><button class="btn g" data-act="gdopen">Open in Drive</button><button class="btn g" data-act="dlall">⬇ Download all photos &amp; videos</button>${state.products.some(p=>!p.gta)?'<button class="btn g" data-act="gtaren">Rename old folders to GTA format</button>':''}<button class="btn d" data-act="signout">Sign out</button></div></div>
  <div class="card" style="margin-bottom:14px"><h3>Backup &amp; export</h3><p class="meta">Backups hold all records but not photo, video or bill files; those live in Google Drive.</p>
  <div class="bar"><button class="btn" data-act="expbk">Export Backup</button><button class="btn g" data-act="impbk">Import Backup</button><button class="btn g" data-act="csv" data-k="products">Export Products CSV</button><button class="btn g" data-act="csv" data-k="expenses">Export Expenses CSV</button><button class="btn g" data-act="csv" data-k="sales">Export Sales CSV</button></div>
  <input type="file" id="bkfile" accept=".json,application/json" hidden data-on="impfile"></div>
@@ -362,6 +369,18 @@ function drawMedia(){
    return`<div class="mi ${k==='photos'&&i===0?'pri':''}">${med}<div class="mb"><span>${k==='photos'?`<button title="Set as primary" data-act="mpri" data-k="${k}" data-i="${i}">★</button>`:''}<button data-act="mmv" data-k="${k}" data-i="${i}" data-d="-1">◀</button><button data-act="mmv" data-k="${k}" data-i="${i}" data-d="1">▶</button></span><button data-act="mrm" data-k="${k}" data-i="${i}" title="Remove">✕</button></div></div>`}).join('')||'<div class="meta">None added yet.</div>';hydrate(el)}}
 function addFiles(k,files){const ok=k==='photos'?/^image\//:/^video\//;let n=0;for(const f of files)if(ok.test(f.type)){mf[k].push({file:f});n++}
  if(n<files.length)toast('Some files were skipped (wrong type).','err');drawMedia()}
+const gtaCode=n=>'GTA'+pad(n);
+const gtaName=(n,name)=>gtaCode(n)+(String(name).replace(/[^\p{L}\p{N}]/gu,'')||'Item').slice(0,40);
+const nextGta=()=>Math.max(state.settings.gtaNext||1,1,...state.products.map(p=>(p.gta||0)+1));
+async function renameToGta(){
+ const todo=byNew(state.products).reverse().filter(p=>!p.gta);if(!todo.length)return;
+ if(!await ask('Rename '+todo.length+' existing product folder(s) in Drive to the GTA01Name format?','Rename'))return;
+ busy=true;
+ try{for(const p of todo){const n=nextGta(),nm=gtaName(n,p.productName);
+   if(p.folderId)await gfetch(API+'/files/'+p.folderId,{method:'PATCH',headers:jh,body:JSON.stringify({name:nm})});
+   p.gta=n;p.folderName=nm;state.settings.gtaNext=n+1}
+  toast('Folders renamed')}catch(e){toast('Rename stopped: '+e.message,'err')}
+ await persist();render();busy=false}
 async function saveCatalog(){
  if(busy)return;const name=$('#f-name').value.trim(),type=$('#f-type').value,buy=$('#f-buy').value,sell=$('#f-sell').value;
  if(!name)return toast('Enter a product name.','err');if(!type||type==='__new')return toast('Select a product type.','err');
@@ -373,7 +392,7 @@ async function saveCatalog(){
   const prim=mf.photos[0];
   if(prim?.file)p.thumb=await makeThumb(prim.file);else if(!prim)p.thumb='';
   else if(editing&&editing.photos?.[0]?.id!==prim.id)p.thumb=await makeThumb(await(await gfetch(API+'/files/'+prim.id+'?alt=media')).blob());
-  if(isNew){const td=await ensureFolder(await getRoot(),p.productType);p.folderName=sanitizeFileName(name)+'_'+p.catalogId;p.folderId=await mkFolder(td,p.folderName);p.photosId=await mkFolder(p.folderId,'photos');p.videosId=await mkFolder(p.folderId,'videos')}
+  if(isNew){const td=await ensureFolder(await getRoot(),p.productType);const gn=nextGta();p.gta=gn;state.settings.gtaNext=gn+1;p.folderName=gtaName(gn,name);p.folderId=await mkFolder(td,p.folderName);p.photosId=await mkFolder(p.folderId,'photos');p.videosId=await mkFolder(p.folderId,'videos')}
   for(const id of mf.removed)await trash(id).catch(()=>{});
   const total=[...mf.photos,...mf.videos].filter(m=>m.file).length;let done=0;
   for(const k of['photos','videos']){const fid=k==='photos'?p.photosId:p.videosId,used=new Set(mf[k].filter(m=>m.name).map(m=>m.name));let n=0;const out=[];
@@ -488,7 +507,7 @@ function exportCSV(k){const defs={products:['catalogId','productName','productTy
 
 /* ===== events ===== */
 const acts={
- signin:signIn,signout:signOut,sync:()=>syncNow(true),dlall:()=>downloadMedia(state.products),dlp:el=>downloadMedia(state.products.filter(p=>p.catalogId===el.dataset.id)),dlf:el=>downloadOne(el.dataset.fid,el.dataset.name),lv:loadVideo,gdopen:()=>G.rootId&&window.open('https://drive.google.com/drive/folders/'+G.rootId,'_blank'),savecid:()=>{const v=$('#cid').value.trim();if(!v)return toast('Paste your Client ID.','err');localStorage.setItem('mbd_cid',v);location.reload()},close:closeModal,burger:()=>$('#side').classList.toggle('open'),
+ signin:signIn,signout:signOut,sync:()=>syncNow(true),dlall:()=>downloadMedia(state.products),dlp:el=>downloadMedia(state.products.filter(p=>p.catalogId===el.dataset.id)),dlf:el=>downloadOne(el.dataset.fid,el.dataset.name),lv:loadVideo,gtaren:renameToGta,gdopen:()=>G.rootId&&window.open('https://drive.google.com/drive/folders/'+G.rootId,'_blank'),savecid:()=>{const v=$('#cid').value.trim();if(!v)return toast('Paste your Client ID.','err');localStorage.setItem('mbd_cid',v);location.reload()},close:closeModal,burger:()=>$('#side').classList.toggle('open'),
   go:el=>showPage(el.dataset.p),addcat:()=>openCatalogForm(),savecat:saveCatalog,view:el=>viewProduct(el.dataset.id),edit:el=>openCatalogForm(el.dataset.id),del:el=>deleteCatalog(el.dataset.id),openf:el=>openFolder(el.dataset.id),
  dljson:el=>{const{thumb,...p}=state.products.find(x=>x.catalogId===el.dataset.id);download('product-'+p.catalogId+'.json',JSON.stringify(p,null,2))},
  gal:el=>{const m=$('#mainim');if(m&&el.src){m.src=el.src}},
