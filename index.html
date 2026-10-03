@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<title>Meesho Business Dashboard</title>
+<style>
+:root{--ink:#2a1630;--plum:#5b2a63;--plum2:#7a3d84;--rose:#b4636f;--gold:#b8893b;--bg:#f5f2f6;--card:#fff;--line:#e6dfe9;--mut:#7d7083;--ok:#1f7a5c;--bad:#b3342f;--r:14px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:15px}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;margin:0;font-weight:600}
+button,input,select,textarea{font:inherit;color:inherit}
+.side{position:fixed;inset:0 auto 0 0;width:230px;background:var(--ink);color:#e9dfee;display:flex;flex-direction:column;padding:20px 12px;z-index:20;transition:transform .25s}
+.brand{font-family:Georgia,serif;font-size:21px;padding:4px 10px 22px;color:#fff}.brand small{display:block;font:12px system-ui;color:#b9a6c0;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:3px;flex:1}
+.nav a{display:flex;gap:10px;align-items:center;padding:11px 12px;border-radius:10px;color:#d8c9de;text-decoration:none;cursor:pointer;transition:.15s}
+.nav a:hover{background:#3b2342}.nav a.on{background:var(--plum2);color:#fff}
+.ver{font-size:12px;color:#a995b1;padding:10px}
+main{margin-left:230px;padding:26px 30px 60px;max-width:1300px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}.top h2{font-size:27px;flex:1}
+#burger{display:none}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.card{background:var(--card);border-radius:var(--r);box-shadow:0 1px 3px rgba(60,30,70,.08);padding:16px;border:1px solid var(--line)}
+.stat .l{color:var(--mut);font-size:13px}.stat .v{font-family:Georgia,serif;font-size:25px;margin-top:4px}
+.stat.hero{background:var(--plum);color:#fff;border:0}.stat.hero .l{color:#e0cde5}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.btn{border:0;border-radius:10px;padding:9px 15px;background:var(--plum);color:#fff;cursor:pointer;transition:.15s}.btn:hover{background:var(--plum2)}
+.btn.g{background:#fff;color:var(--plum);border:1px solid var(--line)}.btn.g:hover{background:#f2ebf5}
+.btn.d{background:#fff;color:var(--bad);border:1px solid #efc9c6}.btn.d:hover{background:#fdeceb}.btn.s{padding:5px 10px;font-size:13px}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--rose);outline-offset:1px}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}.fld{margin-bottom:12px}
+.row{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}.bar input[type=search]{max-width:320px}.bar select{width:auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:13px}.chip.on{background:var(--plum);color:#fff;border-color:var(--plum)}
+.pcards{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.pc{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.pc .im{aspect-ratio:1/1;background:linear-gradient(135deg,#efe5f2,#f8ecee);display:grid;place-items:center;font-size:44px;overflow:hidden}.pc .im img{width:100%;height:100%;object-fit:cover}
+.pc .bd{padding:13px 14px;flex:1}.pc h3{font-size:17px;margin-bottom:3px}.meta{color:var(--mut);font-size:13px}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;background:#f0e6f3;color:var(--plum);font-size:12px}.tag.ok{background:#dff3ea;color:var(--ok)}.tag.bad{background:#fbe3e1;color:var(--bad)}.tag.w{background:#f7ecd5;color:#8a6420}
+.pc .ac{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 14px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);font-size:14px}th{color:var(--mut);font-weight:500;font-size:13px}
+.tw{overflow-x:auto}
+.empty{text-align:center;padding:42px 16px;color:var(--mut)}.empty b{display:block;font-size:34px;margin-bottom:6px}
+#modal,#dlg{position:fixed;inset:0;background:rgba(30,12,36,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 14px;z-index:50}
+#modal.on,#dlg.on{display:flex}#dlg{z-index:60;align-items:center}
+.mbox{background:#fff;border-radius:18px;width:100%;max-width:820px;padding:24px;animation:pop .18s}.mbox.sm{max-width:420px}
+@keyframes pop{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.mh{display:flex;align-items:center;margin-bottom:16px}.mh h2{flex:1}.x{border:0;background:none;font-size:24px;cursor:pointer;color:var(--mut)}
+.dz{border:2px dashed #cdbad3;border-radius:12px;padding:16px;text-align:center;color:var(--mut);cursor:pointer;background:#fbf8fc}.dz.over{background:#f1e4f4;border-color:var(--plum)}
+.mg{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));margin-top:10px}
+.mi{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#faf6fb}.mi img,.mi video{width:100%;aspect-ratio:1;object-fit:cover;display:block}.mi.pri{outline:2px solid var(--gold)}
+.mi .mb{display:flex;justify-content:space-between;padding:3px}.mi button{border:0;background:#fff;border-radius:6px;cursor:pointer;padding:2px 6px}
+.profit{padding:10px 14px;border-radius:10px;background:#f3ecf6;margin-bottom:12px;display:flex;gap:20px;flex-wrap:wrap}
+.gal{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}.gal img,.gal video{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer}
+.main-im{width:100%;max-height:420px;object-fit:contain;background:#f6eff8;border-radius:12px;margin-bottom:10px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;margin:14px 0}.kv span:nth-child(odd){color:var(--mut)}
+pre.pd{white-space:pre-wrap;background:#faf6fb;padding:10px;border-radius:10px;font:inherit;margin:4px 0 0}
+.hb{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0}.hb span.n{width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hb i{display:block;height:14px;border-radius:6px;background:linear-gradient(90deg,var(--plum),var(--rose))}.hb em{font-style:normal;color:var(--mut)}
+.cols{display:flex;gap:6px;align-items:flex-end;height:170px;padding-top:10px}.cols div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:11px;color:var(--mut)}.cols i{display:block;width:70%;max-width:46px;background:linear-gradient(var(--rose),var(--plum));border-radius:6px 6px 0 0;min-height:2px}
+.two{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);animation:pop .2s;max-width:340px}.toast.err{background:var(--bad)}
+.setup{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 20% 10%,#e9d7ee,#f5f2f6 55%)}
+.setup .card{max-width:520px;text-align:center;padding:36px}.setup h1{font-size:30px;margin-bottom:10px}.setup p{color:var(--mut)}
+.banner{background:#f7ecd5;color:#6d4e12;padding:10px 14px;border-radius:10px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.loading{opacity:.6;pointer-events:none}
+@media(max-width:1000px){.side{transform:translateX(-100%)}.side.open{transform:none}main{margin-left:0;padding:18px 14px 90px}#burger{display:inline-block}}
+@media(max-width:700px){
+ .bnav{display:flex}table,thead,tbody,tr,td{display:block}thead{display:none}tr{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:8px}
+ td{border:0;display:flex;justify-content:space-between;gap:10px;padding:5px 6px}td::before{content:attr(data-l);color:var(--mut);font-size:13px}.kv{grid-template-columns:1fr}.mbox{padding:16px}}
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--ink);z-index:19;justify-content:space-around;padding:6px 0}.bnav a{color:#d8c9de;font-size:20px;padding:6px 12px;border-radius:8px;cursor:pointer}.bnav a.on{background:var(--plum2);color:#fff}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.gi{position:relative}.gi .dlb{position:absolute;right:4px;bottom:4px;border:0;border-radius:6px;background:rgba(255,255,255,.92);cursor:pointer;padding:2px 7px;font-size:13px}
+.vph{aspect-ratio:16/10;display:grid;place-items:center;text-align:center;background:#f1e4f4;border-radius:8px;cursor:pointer;font-size:13px;padding:6px;color:var(--plum)}
+.pbar{height:10px;background:#efe5f2;border-radius:99px;overflow:hidden;margin:14px 0}.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--plum),var(--rose));transition:width .2s}
+</style>
+</head>
+<body>
+<div id="app"></div><div id="modal"></div><div id="dlg"></div><div id="toasts"></div>
+<script>
+/* ===== helpers ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=n=>'₹'+(+n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+const num=v=>parseFloat(v)||0, pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>ymd(new Date());
+const fdate=s=>s?new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
+const BASE_TYPES=['Earrings','Bangles','Invisible Chains','Necklaces','Bracelets','Rings','Pendants','Anklets','Jewellery Sets','Other'];
+const BASE_CATS=['Product Purchase','Raw Materials','Packaging','Shipping','Meesho Charges','Advertising','Instagram Advertising','Equipment','Tools','Electricity','Internet','Transportation','Labour','Rent','Other'];
+const ORDER_ST=['New','Confirmed','Packed','Shipped','Delivered','Cancelled','Returned'], PAY_ST=['Paid','Pending','Refunded'];
+const NAV=[['dash','🏠','Dashboard'],['cat','📦','Catalogs'],['exp','💰','Expenses'],['sales','🛒','Sales / Orders'],['rep','📊','Reports'],['set','⚙️','Settings']];
+const generateUniqueId=p=>{const d=new Date();return p+'-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+Array.from(crypto.getRandomValues(new Uint8Array(3)),b=>b.toString(16).padStart(2,'0')).join('').toUpperCase()};
+const sanitizeFileName=s=>String(s).replace(/[<>:"\/\\|?*\x00-\x1f]/g,'').trim().replace(/\s+/g,'_').replace(/[. ]+$/,'').slice(0,60)||'Item';
+const extOf=n=>(n.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
+function toast(m,t){const e=document.createElement('div');e.className='toast '+(t||'');e.textContent=m;$('#toasts').append(e);setTimeout(()=>e.remove(),4200)}
+function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:type||'application/json'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+/* ===== CONFIG: paste your Google OAuth Client ID here (see README) ===== */
+const CONFIG_CLIENT_ID='YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const clientId=()=>CONFIG_CLIENT_ID.startsWith('YOUR_')?(localStorage.getItem('mbd_cid')||''):CONFIG_CLIENT_ID;
+const SCOPE='https://www.googleapis.com/auth/drive.file', API='https://www.googleapis.com/drive/v3', UP='https://www.googleapis.com/upload/drive/v3', FOLDER='application/vnd.google-apps.folder';
+
+/* ===== state ===== */
+let state={products:[],expenses:[],sales:[],settings:{customTypes:[],customCats:[]}};
+let busy=false;const G={phase:'boot',err:'',authLost:false,rootId:'',syncing:false,last:0};
+const ui={page:'dash',q:{cat:'',exp:'',sale:''},type:'',f:{exp:{p:'all'},rep:{p:'month'}}};
+const types=()=>[...BASE_TYPES,...state.settings.customTypes.filter(t=>!BASE_TYPES.includes(t))];
+const cats=()=>[...BASE_CATS,...state.settings.customCats.filter(t=>!BASE_CATS.includes(t))];
+
+/* ===== Google auth (Google Identity Services token client) ===== */
+let tc=null,tok=null,tokExp=0,tokP=null,pend=null;
+const hasTok=()=>tok&&Date.now()<tokExp-60000;
+function initAuth(){tc=google.accounts.oauth2.initTokenClient({client_id:clientId(),scope:SCOPE,
+ callback:r=>pend&&pend.ok(r),error_callback:e=>pend&&pend.err(e)})}
+function getToken(){if(hasTok())return Promise.resolve(tok);if(tokP)return tokP;
+ tokP=new Promise((res,rej)=>{pend={ok:r=>{if(r.error)return rej(new Error(r.error_description||r.error));tok=r.access_token;tokExp=Date.now()+(+r.expires_in||3600)*1000;localStorage.setItem('mbd_gd','1');res(tok)},
+  err:e=>rej(new Error(e.type==='popup_closed'?'Sign-in window was closed.':e.type==='popup_failed_to_open'?'Pop-up blocked. Allow pop-ups for this site and try again.':(e.message||e.type||'Sign-in failed')))};
+  tc.requestAccessToken({prompt:''})}).finally(()=>{tokP=null});return tokP}
+async function gfetch(url,opt={},retry=true){
+ let t;try{t=await getToken()}catch(e){if(G.phase==='ready'&&!G.authLost){G.authLost=true;render()}throw new Error('Google session expired. Tap Reconnect and try again.')}
+ const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
+ if(r.status===401&&retry){tok=null;return gfetch(url,opt,false)}
+ if(!r.ok){let m='';try{m=(await r.json()).error.message}catch{}throw new Error(m||'Drive error '+r.status)}return r}
+
+/* ===== Drive helpers ===== */
+const qe=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+const jh={'Content-Type':'application/json; charset=UTF-8'};
+async function findOne(pid,name,folder){const q=`'${pid}' in parents and name='${qe(name)}' and trashed=false and mimeType${folder?'=':'!='}'${FOLDER}'`;
+ return((await(await gfetch(API+'/files?pageSize=5&orderBy=createdTime&fields=files(id,name)&q='+encodeURIComponent(q))).json()).files||[])[0]||null}
+async function mkFolder(pid,name){return(await(await gfetch(API+'/files?fields=id',{method:'POST',headers:jh,body:JSON.stringify({name,mimeType:FOLDER,parents:[pid]})})).json()).id}
+const fc={};
+const ensureFolder=(pid,name)=>{const k=pid+'/'+name;return fc[k]||(fc[k]=(async()=>(await findOne(pid,name,true))?.id||await mkFolder(pid,name))().catch(e=>{delete fc[k];throw e}))};
+const getRoot=async()=>G.rootId||(G.rootId=await ensureFolder('root','MeeshoBusiness'));
+const trash=id=>gfetch(API+'/files/'+id,{method:'PATCH',headers:jh,body:'{"trashed":true}'});
+async function uploadFile(pid,name,blob,existing){const type=blob.type||'application/octet-stream';
+ if(blob.size>5*1024*1024&&!existing){const r=await gfetch(UP+'/files?uploadType=resumable&fields=id,name',{method:'POST',headers:{...jh,'X-Upload-Content-Type':type},body:JSON.stringify({name,parents:[pid]})});
+  const r2=await fetch(r.headers.get('Location'),{method:'PUT',headers:{'Content-Type':type},body:blob});if(!r2.ok)throw new Error('Upload failed ('+r2.status+')');return r2.json()}
+ const meta=existing?{name}:{name,parents:[pid]},b='mbd'+Math.random().toString(36).slice(2);
+ const body=new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: ${type}\r\n\r\n`,blob,`\r\n--${b}--`]);
+ return(await gfetch(UP+'/files'+(existing?'/'+existing:'')+'?uploadType=multipart&fields=id,name',{method:existing?'PATCH':'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body})).json()}
+const jid={};
+async function readJSON(pid,name){const f=await findOne(pid,name);if(!f)return null;jid[pid+name]=f.id;return(await gfetch(API+'/files/'+f.id+'?alt=media')).json()}
+async function writeJSON(pid,name,o){const k=pid+name;if(!jid[k]){const f=await findOne(pid,name);if(f)jid[k]=f.id}
+ const r=await uploadFile(pid,name,new Blob([JSON.stringify(o,null,2)],{type:'application/json'}),jid[k]);jid[k]=r.id}
+const urlCache={};
+async function fileURL(id){return urlCache[id]||(urlCache[id]=URL.createObjectURL(await(await gfetch(API+'/files/'+id+'?alt=media')).blob()))}
+async function hydrate(scope){const els=[...(scope||document).querySelectorAll('img[data-fid]')].filter(e=>!e.dataset.done);els.forEach(e=>e.dataset.done=1);let i=0;
+ const w=async()=>{while(i<els.length){const el=els[i++];try{el.src=await fileURL(el.dataset.fid)}catch{}}};await Promise.all([w(),w(),w()])}
+async function makeThumb(file){try{const b=await createImageBitmap(file);const s=Math.min(1,240/Math.max(b.width,b.height));const c=document.createElement('canvas');c.width=b.width*s;c.height=b.height*s;c.getContext('2d').drawImage(b,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.6)}catch{return''}}
+
+/* ===== persistence (only changed files are re-uploaded) ===== */
+const saved={};let pq=Promise.resolve();
+const persist=()=>(pq=pq.then(doPersist).catch(()=>{}));
+async function doPersist(){if(G.phase!=='ready')return;
+ try{const md=await ensureFolder(await getRoot(),'_MeeshoDashboard');
+  const files={products:state.products,expenses:state.expenses,sales:state.sales,settings:state.settings};
+  for(const n in files){const s=JSON.stringify(files[n]);if(s!==saved[n]){await writeJSON(md,n+'.json',files[n]);saved[n]=s}}}
+ catch(e){toast('Could not save to Google Drive: '+e.message,'err')}}
+async function loadFromDrive(){
+ const md=await ensureFolder(await getRoot(),'_MeeshoDashboard');
+ const [pl,el,sl,st]=await Promise.all(['products','expenses','sales','settings'].map(n=>readJSON(md,n+'.json')));
+ state.products=(Array.isArray(pl)?pl:[]).map(p=>({...p,photos:(p.photos||[]).filter(m=>m&&m.id),videos:(p.videos||[]).filter(m=>m&&m.id)}));
+ state.expenses=Array.isArray(el)?el:[];state.sales=Array.isArray(sl)?sl:[];
+ state.settings={customTypes:[],customCats:[],...(st||{})};
+ for(const n of['products','expenses','sales','settings'])saved[n]=JSON.stringify(state[n]);G.last=Date.now()}
+
+/* ===== sign-in / sync / init ===== */
+async function connectDrive(){G.phase='loading';render();
+ try{await loadFromDrive();G.phase='ready';render()}catch(e){G.phase='signin';G.err='Could not load from Google Drive: '+e.message;render()}}
+async function signIn(){G.err='';try{await getToken();G.authLost=false;if(G.phase==='ready'){render();return toast('Reconnected')}await connectDrive()}
+ catch(e){if(G.phase!=='ready')G.phase='signin';G.err=e.message;render()}}
+function signOut(){tok=null;tokExp=0;localStorage.removeItem('mbd_gd');for(const k in fc)delete fc[k];G.rootId='';
+ state={products:[],expenses:[],sales:[],settings:{customTypes:[],customCats:[]}};G.phase='signin';G.err='';render()}
+async function syncNow(manual){if(busy||G.syncing||(!manual&&!hasTok()))return;G.syncing=true;
+ try{await pq;await loadFromDrive();render();manual&&toast('Synced with Google Drive')}catch(e){manual&&toast('Sync failed: '+e.message,'err')}G.syncing=false}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.phase==='ready'&&Date.now()-G.last>120000&&!$('#modal').classList.contains('on')&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))syncNow(false)});
+const waitGIS=()=>new Promise(r=>{let n=0;const t=setInterval(()=>{if(window.google?.accounts?.oauth2||++n>100){clearInterval(t);r(!!window.google?.accounts?.oauth2)}},100)});
+async function initApp(){
+ if(!clientId()){G.phase='nocfg';return render()}
+ if(!await waitGIS()){G.phase='signin';G.err='Could not load Google sign-in. Check your internet connection.';return render()}
+ initAuth();G.phase='signin';render();
+ if(localStorage.getItem('mbd_gd')){try{await getToken();await connectDrive()}catch{G.phase='signin';render()}}}
+
+/* ===== media download ===== */
+function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+async function downloadOne(id,name){try{toast('Downloading '+name+'…');saveBlob(await(await gfetch(API+'/files/'+id+'?alt=media')).blob(),name)}catch(e){toast(e.message,'err')}}
+let dlCancel=false;
+async function downloadMedia(plist){
+ const items=[];for(const p of plist)for(const k of['photos','videos'])for(const m of(p[k]||[]))items.push({m,p,k});
+ if(!items.length)return toast('No photos or videos to download.','err');
+ let dir=null;const sub=(h,n)=>h.getDirectoryHandle(n,{create:true});
+ if(window.showDirectoryPicker){try{dir=await showDirectoryPicker({mode:'readwrite',id:'meesho-dl'})}catch(e){if(e.name==='AbortError')return}}
+ dlCancel=false;const d=$('#dlg');
+ d.innerHTML=`<div class="mbox sm"><h3>Downloading media</h3><div class="pbar"><i id="pb"></i></div><p id="pt" class="meta">Starting…</p><div style="display:flex;justify-content:flex-end"><button class="btn g" id="dc">Cancel</button></div></div>`;d.classList.add('on');$('#dc').onclick=()=>{dlCancel=true};
+ let ok=0,bad=0;
+ for(let i=0;i<items.length&&!dlCancel;i++){const{m,p,k}=items[i];$('#pt').textContent=`${i+1} of ${items.length}: ${p.productName} — ${m.name}`;
+  try{const r=await gfetch(API+'/files/'+m.id+'?alt=media');
+   if(dir){const h=await sub(await sub(await sub(dir,sanitizeFileName(p.productType)),p.folderName),k);const w=await(await h.getFileHandle(m.name,{create:true})).createWritable();await r.body.pipeTo(w)}
+   else{saveBlob(await r.blob(),sanitizeFileName(p.productName)+'_'+p.catalogId.slice(-6)+'_'+m.name);await new Promise(x=>setTimeout(x,600))}
+   ok++}catch{bad++}
+  $('#pb').style.width=((i+1)/items.length*100)+'%'}
+ d.classList.remove('on');d.innerHTML='';
+ toast((dlCancel?'Cancelled. ':'Done. ')+ok+' file(s) downloaded'+(dir?' to "'+dir.name+'"':'')+(bad?', '+bad+' failed':''),bad?'err':'')}
+async function loadVideo(el){const id=el.dataset.fid;el.textContent='Loading…';
+ try{const v=document.createElement('video');v.src=await fileURL(id);v.controls=true;v.autoplay=true;v.playsInline=true;el.replaceWith(v)}catch(e){el.textContent='Failed. Tap to retry';toast(e.message,'err')}}
+
+/* ===== rendering ===== */
+/* ===== rendering ===== */
+function gate(){const c=t=>`<div class="setup"><div class="card"><div style="font-size:46px">💎</div><h1>Meesho Business Dashboard</h1>${t}</div></div>`;
+ if(G.phase==='nocfg')return c(`<p>One-time setup: paste your Google OAuth Client ID (or put it in <code>CONFIG_CLIENT_ID</code> in the code).</p><div class="fld"><input id="cid" placeholder="xxxx.apps.googleusercontent.com"></div><button class="btn" data-act="savecid">Save</button>`);
+ if(G.phase==='loading')return c('<p>Loading your data from Google Drive…</p>');
+ return c(`<p>Your data, photos and videos are stored in your own Google Drive, so you can open this dashboard from any phone or computer.</p>${G.err?`<p class="neg">${esc(G.err)}</p>`:''}<p><button class="btn" data-act="signin" style="font-size:16px;padding:12px 22px">Sign in with Google</button></p>`)}
+function render(){
+ if(G.phase!=='ready'){$('#app').innerHTML=gate();return}
+ const p=ui.page;
+ $('#app').innerHTML=`<aside class="side" id="side"><div class="brand">💎 Meesho<small>Handmade jewellery</small></div>
+ <nav class="nav">${NAV.map(n=>`<a class="${p===n[0]?'on':''}" data-act="go" data-p="${n[0]}">${n[1]} ${n[2]}</a>`).join('')}</nav>
+ <div class="nav" style="flex:0 0 auto"><a data-act="sync">🔄 Sync Drive</a></div>
+ <div class="ver">Meesho Business Dashboard<br>v2.0 · Google Drive</div></aside>
+ <nav class="bnav">${NAV.map(n=>`<a class="${p===n[0]?'on':''}" data-act="go" data-p="${n[0]}" title="${n[2]}">${n[1]}</a>`).join('')}</nav>
+ <main>${G.authLost?'<div class="banner">Your Google session expired. <button class="btn s" data-act="signin">Reconnect</button></div>':''}
+ ${({dash:pgDash,cat:pgCat,exp:pgExp,sales:pgSales,rep:pgRep,set:pgSet})[p]()}</main>`;
+ hydrate()}
+
+const showPage=p=>{ui.page=p;render();scrollTo(0,0)};
+const empty=(i,t,s)=>`<div class="empty"><b>${i}</b>${t}<br><small>${s||''}</small></div>`;
+
+/* ----- calculations ----- */
+const activeOrder=o=>!['Cancelled','Returned'].includes(o.status)&&o.payStatus!=='Refunded';
+const orderRev=o=>activeOrder(o)?num(o.finalAmount):0;
+const orderNet=o=>activeOrder(o)?num(o.netProfit):0;
+function calculateProfit(buy,sell){const profit=num(sell)-num(buy);return{profit,margin:num(sell)>0?profit/num(sell)*100:0}}
+function range(f){const n=new Date();let a='0000-01-01',b='9999-12-31';
+ if(f.p==='today')a=b=today();
+ else if(f.p==='week'){const d=new Date(n);d.setDate(n.getDate()-((n.getDay()+6)%7));a=ymd(d);b=today()}
+ else if(f.p==='month'){a=ymd(new Date(n.getFullYear(),n.getMonth(),1));b=ymd(new Date(n.getFullYear(),n.getMonth()+1,0))}
+ else if(f.p==='year'){a=n.getFullYear()+'-01-01';b=n.getFullYear()+'-12-31'}
+ else if(f.p==='custom'){a=f.from||a;b=f.to||b}
+ return[a,b]}
+const inRange=(d,f)=>{const[a,b]=range(f);return d>=a&&d<=b};
+function calculateReports(f){
+ const ex=state.expenses.filter(e=>inRange(e.date,f)), so=state.sales.filter(o=>inRange(o.date,f)), act=so.filter(activeOrder);
+ const sum=(a,k)=>a.reduce((s,x)=>s+num(x[k]),0);
+ const r={revenue:sum(act,'finalAmount'),cost:sum(act,'cost'),meesho:sum(act,'meesho'),ship:sum(act,'ship'),other:sum(act,'other'),expenses:sum(ex,'amount'),orders:so.length,ex,so,act};
+ r.orderProfit=r.revenue-r.cost-r.meesho-r.ship-r.other;r.net=r.orderProfit-r.expenses;
+ const by={};act.forEach(o=>{const k=o.product;by[k]=by[k]||{name:k,qty:0,rev:0,profit:0};by[k].qty+=num(o.qty);by[k].rev+=num(o.finalAmount);by[k].profit+=num(o.netProfit)});
+ r.perf=Object.values(by);const ec={};ex.forEach(e=>ec[e.category]=(ec[e.category]||0)+num(e.amount));r.byCat=Object.entries(ec).sort((a,b)=>b[1]-a[1]);
+ const em={};ex.forEach(e=>{const m=e.date.slice(0,7);em[m]=(em[m]||0)+num(e.amount)});r.byMonth=Object.entries(em).sort();return r}
+const bars=(rows,fmt=inr)=>{const m=Math.max(...rows.map(r=>r[1]),1);return rows.length?rows.map(r=>`<div class="hb"><span class="n" title="${esc(r[0])}">${esc(r[0])}</span><i style="width:${Math.max(r[1]/m*55,1)}%"></i><em>${fmt(r[1])}</em></div>`).join(''):'<div class="meta">No data for this period.</div>'};
+const stat=(l,v,c,h)=>`<div class="card stat ${h?'hero':''}"><div class="l">${l}</div><div class="v ${c||''}">${v}</div></div>`;
+
+/* ----- Dashboard ----- */
+const byNew=a=>[...a].sort((x,y)=>String(y.createdAt).localeCompare(String(x.createdAt)));
+function pgDash(){
+ const P=state.products,all=calculateReports({p:'all'});
+ const buy=P.reduce((s,p)=>s+num(p.purchasePrice),0),sell=P.reduce((s,p)=>s+num(p.sellingPrice),0);
+ const pend=state.sales.filter(o=>o.payStatus==='Pending'&&activeOrder(o)).reduce((s,o)=>s+num(o.finalAmount),0);
+ const months=[];for(let i=5;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);months.push(d.getFullYear()+'-'+pad(d.getMonth()+1))}
+ const mv=months.map(m=>[m,state.sales.filter(o=>activeOrder(o)&&o.date.startsWith(m)).reduce((s,o)=>s+num(o.finalAmount),0)]);const mx=Math.max(...mv.map(x=>x[1]),1);
+ return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Dashboard</h2><button class="btn g" data-act="dlall">⬇ Download All Media</button><button class="btn" data-act="addcat">+ Add Catalog</button></div>
+ <div class="grid">${stat('Total Products',P.length)}${stat('Total Catalogs (types)',new Set(P.map(p=>p.productType)).size)}${stat('Product Purchase Value',inr(buy))}${stat('Total Selling Value',inr(sell))}
+ ${stat('Total Expenses',inr(all.expenses))}${stat('Profit Potential (unsold stock)',inr(sell-buy),sell-buy<0?'neg':'')}${stat('Total Sales',inr(all.revenue))}${stat('Pending Payments',inr(pend),pend?'neg':'')}${stat('Net Profit (actual)',inr(all.net),all.net<0?'neg':'',1)}</div>
+ <h3 style="margin:26px 0 12px">Available Products</h3>${prodCards(byNew(P))}
+ <div class="two" style="margin-top:26px"><div class="card"><h3>Recent Expenses</h3><div class="tw">${state.expenses.length?`<table><thead><tr><th>Expense</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead><tbody>${[...state.expenses].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(e=>`<tr><td data-l="Expense">${esc(e.expenseName)}</td><td data-l="Category">${esc(e.category)}</td><td data-l="Amount">${inr(e.amount)}</td><td data-l="Date">${fdate(e.date)}</td></tr>`).join('')}</tbody></table>`:empty('💰','No expenses yet')}</div></div>
+ <div class="card"><h3>Sales Overview</h3><div class="cols">${mv.map(m=>`<div title="${inr(m[1])}"><i style="height:${m[1]/mx*130}px"></i>${m[0].slice(5)}</div>`).join('')}</div><div class="meta">Revenue, last 6 months</div></div></div>`}
+
+/* ----- product cards ----- */
+function prodCards(list){
+ if(!list.length)return`<div class="card">${empty('💎','No catalogs yet','Add your first product to see it here.')}</div>`;
+ return`<div class="pcards">${list.map(p=>{const pr=calculateProfit(p.purchasePrice,p.sellingPrice),ph=(p.photos||[]),vd=(p.videos||[]);
+ const img=p.thumb?`<img src="${p.thumb}" alt="">`:'💎';
+ return`<div class="card pc"><div class="im">${img}</div><div class="bd"><h3>${esc(p.productName)}</h3><div class="meta">${esc(p.productType)} · ${esc(p.catalogId)}</div>
+ <div style="margin:8px 0">Buy ${inr(p.purchasePrice)} → Sell <b>${inr(p.sellingPrice)}</b><br><span class="${pr.profit<0?'neg':'pos'}">Profit ${inr(pr.profit)} (${pr.margin.toFixed(1)}%)</span></div>
+ <div class="meta">📷 ${ph.length} photos · 🎬 ${vd.length} videos<br>Added ${fdate(p.createdAt)}</div><div style="margin-top:6px"><span class="tag ${p.status==='Active'?'ok':'w'}">${esc(p.status)}</span></div></div>
+ <div class="ac"><button class="btn s" data-act="view" data-id="${p.catalogId}">View</button><button class="btn g s" data-act="edit" data-id="${p.catalogId}">Edit</button><button class="btn g s" data-act="dlp" data-id="${p.catalogId}">⬇ Media</button><button class="btn g s" data-act="openf" data-id="${p.catalogId}">Drive</button><button class="btn d s" data-act="del" data-id="${p.catalogId}">Delete</button></div></div>`}).join('')}</div>`}
+
+/* ----- Catalog page ----- */
+function pgCat(){
+ const q=ui.q.cat.toLowerCase(),list=byNew(state.products).filter(p=>(!ui.type||p.productType===ui.type)&&(!q||[p.productName,p.productType,p.catalogId].join(' ').toLowerCase().includes(q)));
+ return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Catalogs</h2><button class="btn" data-act="addcat">+ Add Catalog</button></div>
+ <div class="bar"><input type="search" id="q-cat" data-on="q" data-k="cat" placeholder="Search name, type or catalog ID" value="${esc(ui.q.cat)}">
+ <select data-on="typef"><option value="">All types</option>${types().map(t=>`<option ${ui.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>${prodCards(list)}`}
+
+/* ----- Expenses ----- */
+function filterBar(k,year){const f=ui.f[k];return`<div class="bar"><div class="chips">${[['all','All'],['today','Today'],['week','This Week'],['month','This Month'],...(year?[['year','This Year']]:[]),['custom','Custom']].map(c=>`<span class="chip ${f.p===c[0]?'on':''}" data-act="fp" data-k="${k}" data-p="${c[0]}">${c[1]}</span>`).join('')}</div>
+ ${f.p==='custom'?`<input type="date" style="width:auto" data-on="fd" data-k="${k}" data-w="from" value="${f.from||''}"><input type="date" style="width:auto" data-on="fd" data-k="${k}" data-w="to" value="${f.to||''}">`:''}</div>`}
+function pgExp(){
+ const q=ui.q.exp.toLowerCase(),list=[...state.expenses].filter(e=>inRange(e.date,ui.f.exp)&&(!q||[e.expenseName,e.category,e.date].join(' ').toLowerCase().includes(q))).sort((a,b)=>b.date.localeCompare(a.date));
+ const tot=list.reduce((s,e)=>s+num(e.amount),0);
+ return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Expenses</h2><button class="btn" data-act="addexp">+ Add Expense</button></div>
+ <div class="bar"><input type="search" id="q-exp" data-on="q" data-k="exp" placeholder="Search expense, category or date (YYYY-MM-DD)" value="${esc(ui.q.exp)}"><b>Total: ${inr(tot)}</b></div>${filterBar('exp')}
+ <div class="card tw">${list.length?`<table><thead><tr><th>Date</th><th>Expense</th><th>Category</th><th>Amount</th><th>Payment</th><th>Bill</th><th>Actions</th></tr></thead><tbody>${list.map(e=>`<tr><td data-l="Date">${fdate(e.date)}</td><td data-l="Expense">${esc(e.expenseName)}</td><td data-l="Category">${esc(e.category)}</td><td data-l="Amount">${inr(e.amount)}</td><td data-l="Payment">${esc(e.paymentMethod)}</td><td data-l="Bill">${e.bill?'📎 '+esc(e.bill.name):'—'}</td>
+ <td data-l="Actions"><button class="btn g s" data-act="vexp" data-id="${e.expenseId}">View</button> <button class="btn g s" data-act="eexp" data-id="${e.expenseId}">Edit</button> <button class="btn d s" data-act="dexp" data-id="${e.expenseId}">Delete</button></td></tr>`).join('')}</tbody></table>`:empty('🧾','No expenses found','Add an expense or change the filters.')}</div>`}
+
+/* ----- Sales ----- */
+function pgSales(){
+ const q=ui.q.sale.toLowerCase(),list=[...state.sales].filter(o=>!q||[o.orderId,o.product,o.status,o.payStatus].join(' ').toLowerCase().includes(q)).sort((a,b)=>b.date.localeCompare(a.date));
+ return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Sales / Orders</h2><button class="btn" data-act="addsale">+ Add Order</button></div>
+ <div class="bar"><input type="search" id="q-sale" data-on="q" data-k="sale" placeholder="Search order ID, product or status" value="${esc(ui.q.sale)}"></div>
+ <div class="card tw">${list.length?`<table><thead><tr><th>Order</th><th>Date</th><th>Product</th><th>Qty</th><th>Amount</th><th>Net profit</th><th>Payment</th><th>Status</th><th></th></tr></thead><tbody>${list.map(o=>`<tr><td data-l="Order">${esc(o.orderId)}</td><td data-l="Date">${fdate(o.date)}</td><td data-l="Product">${esc(o.product)}</td><td data-l="Qty">${o.qty}</td><td data-l="Amount">${inr(o.finalAmount)}</td><td data-l="Net profit" class="${num(o.netProfit)<0?'neg':'pos'}">${inr(o.netProfit)}</td>
+ <td data-l="Payment"><span class="tag ${o.payStatus==='Paid'?'ok':o.payStatus==='Pending'?'w':'bad'}">${o.payStatus}</span></td><td data-l="Status"><span class="tag">${o.status}</span></td>
+ <td><button class="btn g s" data-act="esale" data-id="${esc(o.orderId)}">Edit</button> <button class="btn d s" data-act="dsale" data-id="${esc(o.orderId)}">Delete</button></td></tr>`).join('')}</tbody></table>`:empty('🛒','No orders yet','Add an order to track revenue and profit.')}</div>`}
+
+/* ----- Reports ----- */
+function pgRep(){
+ const f=ui.f.rep,r=calculateReports(f),P=r.perf;
+ const top=(k,fmt)=>bars([...P].sort((a,b)=>b[k]-a[k]).slice(0,5).map(x=>[x.name,x[k]]),fmt);
+ const exp=[...state.products].sort((a,b)=>b.sellingPrice-a.sellingPrice).slice(0,5).map(p=>[p.productName,num(p.sellingPrice)]);
+ return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Reports</h2></div>${filterBar('rep',1)}
+ <div class="grid">${stat('Total Revenue',inr(r.revenue))}${stat('Product Cost',inr(r.cost))}${stat('Business Expenses',inr(r.expenses))}${stat('Meesho Charges',inr(r.meesho))}${stat('Shipping',inr(r.ship))}${stat('Orders',r.orders)}${stat('Products',state.products.length)}${stat('Net Profit',inr(r.net),r.net<0?'neg':'',1)}</div>
+ <div class="meta" style="margin:8px 2px">Net profit = revenue − product cost − Meesho − shipping − other order charges − business expenses. Cancelled, returned and refunded orders are excluded. Profit potential on the dashboard is separate.</div>
+ <div class="two" style="margin-top:16px"><div class="card"><h3>Best-selling (units)</h3>${top('qty',x=>x)}</div><div class="card"><h3>Highest profit</h3>${top('profit')}</div>
+ <div class="card"><h3>Highest revenue</h3>${top('rev')}</div><div class="card"><h3>Most expensive products</h3>${bars(exp)}</div>
+ <div class="card"><h3>Product-wise sales</h3>${P.length?`<div class="tw"><table><thead><tr><th>Product</th><th>Units</th><th>Revenue</th><th>Profit</th></tr></thead><tbody>${P.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.qty}</td><td>${inr(x.rev)}</td><td>${inr(x.profit)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="meta">No sales in this period.</div>'}</div>
+ <div class="card"><h3>Expenses by category</h3><div class="meta">Highest: ${r.byCat[0]?esc(r.byCat[0][0])+' ('+inr(r.byCat[0][1])+')':'—'} · Total ${inr(r.expenses)}</div>${bars(r.byCat)}</div>
+ <div class="card"><h3>Monthly expense</h3>${bars(r.byMonth)}</div></div>`}
+
+/* ----- Settings ----- */
+function pgSet(){return`<div class="top"><button class="btn g" id="burger" data-act="burger">☰</button><h2>Settings</h2></div>
+ <div class="card" style="margin-bottom:14px"><h3>Google Drive storage</h3><p>All data, photos, videos and bills are stored in your Google Drive, folder <b>MeeshoBusiness</b> <span class="tag ok">Connected</span></p>
+ <p class="meta">Sign in with the same Google account on any phone or computer to see the same data. The app can only see files it created itself, so please do not rename or move the MeeshoBusiness folder, and add media through the app rather than directly in Drive.</p>
+ <div class="bar"><button class="btn" data-act="sync">🔄 Sync now</button><button class="btn g" data-act="gdopen">Open in Drive</button><button class="btn g" data-act="dlall">⬇ Download all photos &amp; videos</button><button class="btn d" data-act="signout">Sign out</button></div></div>
+ <div class="card" style="margin-bottom:14px"><h3>Backup &amp; export</h3><p class="meta">Backups hold all records but not photo, video or bill files; those live in Google Drive.</p>
+ <div class="bar"><button class="btn" data-act="expbk">Export Backup</button><button class="btn g" data-act="impbk">Import Backup</button><button class="btn g" data-act="csv" data-k="products">Export Products CSV</button><button class="btn g" data-act="csv" data-k="expenses">Export Expenses CSV</button><button class="btn g" data-act="csv" data-k="sales">Export Sales CSV</button></div>
+ <input type="file" id="bkfile" accept=".json,application/json" hidden data-on="impfile"></div>
+ <div class="card"><h3>Custom lists</h3><p class="meta">Product types: ${types().map(esc).join(', ')}</p><p class="meta">Expense categories: ${cats().map(esc).join(', ')}</p></div>`}
+
+/* ===== modal + confirm ===== */
+function modal(html,sm){$('#modal').innerHTML=`<div class="mbox ${sm?'sm':''}">${html}</div>`;$('#modal').classList.add('on');hydrate($('#modal'))}
+function closeModal(){$('#modal').classList.remove('on');$('#modal').innerHTML=''}
+function ask(msg,ok='Delete'){return new Promise(res=>{const d=$('#dlg');d.innerHTML=`<div class="mbox sm"><h3>Please confirm</h3><p>${esc(msg)}</p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" id="dn">Cancel</button><button class="btn d" id="dy">${ok}</button></div></div>`;d.classList.add('on');
+ const end=v=>{d.classList.remove('on');d.innerHTML='';res(v)};$('#dn').onclick=()=>end(false);$('#dy').onclick=()=>end(true)})}
+const mh=t=>`<div class="mh"><h2>${t}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`;
+const opts=(a,sel)=>a.map(x=>`<option ${x===sel?'selected':''}>${esc(x)}</option>`).join('');
+
+/* ===== CATALOG form ===== */
+let mf=null,editing=null;
+function openCatalogForm(id){
+ editing=id?state.products.find(p=>p.catalogId===id):null;const p=editing||{};
+ mf={photos:(p.photos||[]).map(m=>({...m})),videos:(p.videos||[]).map(m=>({...m})),removed:[]};
+ modal(`${mh(editing?'Edit Catalog':'Add Catalog')}
+ <div class="row"><div class="fld"><label>Product name *</label><input id="f-name" value="${esc(p.productName)}" placeholder="Traditional Gold Pearl Earrings"></div>
+ <div class="fld"><label>Product type *</label><select id="f-type" data-on="typesel" ${editing?'disabled':''}>${opts(types(),p.productType)}<option value="__new">+ Add Custom Type</option></select>${editing?'<small class="meta">Type is fixed because it names the folder.</small>':''}</div></div>
+ <div class="row"><div class="fld"><label>Purchase price (₹) *</label><input id="f-buy" type="number" min="0" step="any" data-on="calc" value="${p.purchasePrice??''}"></div>
+ <div class="fld"><label>Selling price (₹) *</label><input id="f-sell" type="number" min="0" step="any" data-on="calc" value="${p.sellingPrice??''}"></div>
+ <div class="fld"><label>Status</label><select id="f-status">${opts(['Active','Inactive','Out of Stock'],p.status||'Active')}</select></div></div>
+ <div class="profit" id="f-profit"></div>
+ <div class="fld"><label>Description</label><textarea id="f-desc" rows="3">${esc(p.description)}</textarea></div>
+ <div class="fld"><label>Additional details (material, colour, size, SKU, supplier, notes…)</label><textarea id="f-add" rows="5">${esc(p.additionalDetails)}</textarea></div>
+ <div class="fld"><label>Photos</label><div class="dz" data-k="photos" data-act="browse">📷 Drag &amp; drop photos or click to browse</div><input type="file" id="in-photos" accept="image/*" multiple hidden data-on="files" data-k="photos"><div class="mg" id="g-photos"></div></div>
+ <div class="fld"><label>Videos</label><div class="dz" data-k="videos" data-act="browse">🎬 Drag &amp; drop videos or click to browse</div><input type="file" id="in-videos" accept="video/*" multiple hidden data-on="files" data-k="videos"><div class="mg" id="g-videos"></div></div>
+ 
+ <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" data-act="close">Cancel</button><button class="btn" id="savecat" data-act="savecat">Save Catalog</button></div>`);
+ calcForm();drawMedia()}
+function calcForm(){const{profit,margin}=calculateProfit($('#f-buy').value,$('#f-sell').value);$('#f-profit').innerHTML=`<span>Expected profit: <b class="${profit<0?'neg':'pos'}">${inr(profit)}</b></span><span>Margin: <b class="${profit<0?'neg':''}">${margin.toFixed(1)}%</b></span>${profit<0?'<span class="neg">Selling below cost</span>':''}`}
+function drawMedia(){
+ for(const k of['photos','videos']){const el=$('#g-'+k);if(!el)continue;
+  el.innerHTML=mf[k].map((m,i)=>{if(m.file&&!m.url)m.url=URL.createObjectURL(m.file);
+   const med=k==='photos'?`<img ${m.url?`src="${m.url}"`:`data-fid="${esc(m.id)}"`} alt="">`:m.url?`<video src="${m.url}" preload="metadata" muted controls></video>`:`<div class="vph" style="aspect-ratio:1">🎬<br>${esc(m.name)}</div>`;
+   return`<div class="mi ${k==='photos'&&i===0?'pri':''}">${med}<div class="mb"><span>${k==='photos'?`<button title="Set as primary" data-act="mpri" data-k="${k}" data-i="${i}">★</button>`:''}<button data-act="mmv" data-k="${k}" data-i="${i}" data-d="-1">◀</button><button data-act="mmv" data-k="${k}" data-i="${i}" data-d="1">▶</button></span><button data-act="mrm" data-k="${k}" data-i="${i}" title="Remove">✕</button></div></div>`}).join('')||'<div class="meta">None added yet.</div>';hydrate(el)}}
+function addFiles(k,files){const ok=k==='photos'?/^image\//:/^video\//;let n=0;for(const f of files)if(ok.test(f.type)){mf[k].push({file:f});n++}
+ if(n<files.length)toast('Some files were skipped (wrong type).','err');drawMedia()}
+async function saveCatalog(){
+ if(busy)return;const name=$('#f-name').value.trim(),type=$('#f-type').value,buy=$('#f-buy').value,sell=$('#f-sell').value;
+ if(!name)return toast('Enter a product name.','err');if(!type||type==='__new')return toast('Select a product type.','err');
+ if(buy===''||sell==='')return toast('Enter both purchase and selling price.','err');if(num(buy)<0||num(sell)<0)return toast('Prices cannot be negative.','err');
+ busy=true;const btn=$('#savecat');btn.textContent='Saving…';$('#modal').classList.add('loading');
+ try{const now=new Date().toISOString(),isNew=!editing,p=isNew?{catalogId:generateUniqueId('CAT'),createdAt:now}:{...editing};
+  const{profit,margin}=calculateProfit(buy,sell);
+  Object.assign(p,{productName:name,productType:isNew?type:p.productType,purchasePrice:num(buy),sellingPrice:num(sell),expectedProfit:profit,profitMargin:+margin.toFixed(2),description:$('#f-desc').value.trim(),additionalDetails:$('#f-add').value.trim(),status:$('#f-status').value,updatedAt:now});
+  const prim=mf.photos[0];
+  if(prim?.file)p.thumb=await makeThumb(prim.file);else if(!prim)p.thumb='';
+  else if(editing&&editing.photos?.[0]?.id!==prim.id)p.thumb=await makeThumb(await(await gfetch(API+'/files/'+prim.id+'?alt=media')).blob());
+  if(isNew){const td=await ensureFolder(await getRoot(),p.productType);p.folderName=sanitizeFileName(name)+'_'+p.catalogId;p.folderId=await mkFolder(td,p.folderName);p.photosId=await mkFolder(p.folderId,'photos');p.videosId=await mkFolder(p.folderId,'videos')}
+  for(const id of mf.removed)await trash(id).catch(()=>{});
+  const total=[...mf.photos,...mf.videos].filter(m=>m.file).length;let done=0;
+  for(const k of['photos','videos']){const fid=k==='photos'?p.photosId:p.videosId,used=new Set(mf[k].filter(m=>m.name).map(m=>m.name));let n=0;const out=[];
+   for(const m of mf[k]){if(!m.file){out.push({id:m.id,name:m.name});continue}
+    let nm;do{n++;nm=(k==='photos'?'image-':'video-')+pad(n)+'.'+extOf(m.file.name)}while(used.has(nm));used.add(nm);
+    btn.textContent=`Uploading ${++done}/${total}…`;const f=await uploadFile(fid,nm,m.file);out.push({id:f.id,name:nm})}
+   p[k]=out}
+  const{thumb,...rest}=p;await writeJSON(p.folderId,'product.json',rest);
+  const i=state.products.findIndex(x=>x.catalogId===p.catalogId);if(i<0)state.products.push(p);else state.products[i]=p;
+  await persist();closeModal();render();toast((isNew?'Catalog created: ':'Catalog updated: ')+p.catalogId)}
+ catch(e){toast('Save failed: '+e.message,'err');$('#savecat')&&($('#savecat').textContent='Save Catalog');$('#modal').classList.remove('loading')}
+ busy=false}
+const updateCatalog=saveCatalog;
+async function deleteCatalog(id){
+ const p=state.products.find(x=>x.catalogId===id);if(!p)return;
+ if(!await ask('Delete this catalog? Its data, photos and videos will be moved to your Google Drive trash.'))return;
+ try{if(p.folderId)await trash(p.folderId)}catch(e){toast('Drive folder not trashed: '+e.message,'err')}
+ state.products=state.products.filter(x=>x.catalogId!==id);await persist();closeModal();render();toast('Catalog deleted')}
+function viewProduct(id){
+ const p=state.products.find(x=>x.catalogId===id);if(!p)return;const pr=calculateProfit(p.purchasePrice,p.sellingPrice),ph=p.photos||[],vd=p.videos||[];
+ const dl=f=>`<button class="dlb" data-act="dlf" data-fid="${esc(f.id)}" data-name="${esc(f.name)}" title="Download">⬇</button>`;
+ const photos=ph.map(f=>`<div class="gi"><img data-fid="${esc(f.id)}" data-act="gal" alt="">${dl(f)}</div>`).join('')||'<span class="meta">None</span>';
+ const videos=vd.map(f=>`<div class="gi"><div class="vph" data-act="lv" data-fid="${esc(f.id)}">▶ Tap to load<br><small>${esc(f.name)}</small></div>${dl(f)}</div>`).join('')||'<span class="meta">None</span>';
+ modal(`${mh(esc(p.productName))}${ph[0]?`<img class="main-im" id="mainim" data-fid="${esc(ph[0].id)}" ${p.thumb?`src="${p.thumb}"`:''} alt="">`:p.thumb?`<img class="main-im" src="${p.thumb}" alt="">`:''}
+ <h3>Photos (${ph.length})</h3><div class="gal">${photos}</div><h3 style="margin-top:14px">Videos (${vd.length})</h3><div class="gal" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">${videos}</div>
+ <div class="kv"><span>Product ID</span><span>${esc(p.catalogId)}</span><span>Type</span><span>${esc(p.productType)}</span><span>Status</span><span>${esc(p.status)}</span><span>Purchase price</span><span>${inr(p.purchasePrice)}</span><span>Selling price</span><span>${inr(p.sellingPrice)}</span>
+ <span>Profit</span><span class="${pr.profit<0?'neg':'pos'}">${inr(pr.profit)}</span><span>Profit margin</span><span>${pr.margin.toFixed(1)}%</span><span>Created</span><span>${fdate(p.createdAt)}</span><span>Updated</span><span>${fdate(p.updatedAt)}</span><span>Drive folder</span><span>MeeshoBusiness/${esc(p.productType)}/${esc(p.folderName)}</span></div>
+ <b>Description</b><pre class="pd">${esc(p.description)||'—'}</pre><br><b>Additional details</b><pre class="pd">${esc(p.additionalDetails)||'—'}</pre>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px"><button class="btn" data-act="edit" data-id="${id}">Edit</button><button class="btn g" data-act="dlp" data-id="${id}">⬇ Download all media</button><button class="btn g" data-act="openf" data-id="${id}">Open in Drive</button><button class="btn g" data-act="dljson" data-id="${id}">Download JSON</button><button class="btn d" data-act="del" data-id="${id}">Delete</button></div>`)}
+function openFolder(id){const p=state.products.find(x=>x.catalogId===id);if(p?.folderId)window.open('https://drive.google.com/drive/folders/'+p.folderId,'_blank')}
+
+/* ===== EXPENSES ===== */
+let ef=null,editingExp=null;
+function openExpenseForm(id){
+ editingExp=id?state.expenses.find(e=>e.expenseId===id):null;const e=editingExp||{};ef={file:null,removeBill:false};
+ modal(`${mh(editingExp?'Edit Expense':'Add Expense')}<div class="row"><div class="fld"><label>Expense name *</label><input id="e-name" value="${esc(e.expenseName)}" placeholder="Packaging materials"></div>
+ <div class="fld"><label>Category *</label><select id="e-cat" data-on="catsel">${opts(cats(),e.category)}<option value="__new">+ Add Custom Category</option></select></div>
+ <div class="fld"><label>Amount (₹) *</label><input id="e-amt" type="number" min="0" step="any" value="${e.amount??''}"></div>
+ <div class="fld"><label>Date *</label><input id="e-date" type="date" value="${e.date||today()}"></div>
+ <div class="fld"><label>Payment method</label><select id="e-pay">${opts(['UPI','Cash','Card','Bank Transfer','Other'],e.paymentMethod)}</select></div></div>
+ <div class="fld"><label>Description</label><textarea id="e-desc" rows="3">${esc(e.description)}</textarea></div>
+ <div class="fld"><label>Bill / invoice (optional: JPG, PNG, PDF)</label><input type="file" id="e-bill" accept=".jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" data-on="bill">${e.bill?`<div class="meta" style="margin-top:6px">Current bill: ${esc(e.bill.name)} <button class="btn d s" data-act="rmbill">Remove</button></div>`:''}<div id="billprev" style="margin-top:8px"></div></div>
+ <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" data-act="close">Cancel</button><button class="btn" id="saveexp" data-act="saveexp">Save Expense</button></div>`)}
+
+async function saveExpense(){
+ if(busy)return;const name=$('#e-name').value.trim(),amt=num($('#e-amt').value),date=$('#e-date').value;let cat=$('#e-cat').value;
+ if(!name)return toast('Enter an expense name.','err');if(!(amt>0))return toast('Amount must be greater than 0.','err');if(!date)return toast('Pick a date.','err');if(cat==='__new')return toast('Select a category.','err');
+ busy=true;const btn=$('#saveexp');btn.textContent='Saving…';$('#modal').classList.add('loading');
+ try{const isNew=!editingExp,e=isNew?{expenseId:generateUniqueId('EXP'),createdAt:new Date().toISOString(),bill:''}:{...editingExp};
+  Object.assign(e,{expenseName:name,category:cat,amount:amt,date,paymentMethod:$('#e-pay').value,description:$('#e-desc').value.trim()});
+  if(ef.removeBill||ef.file){if(e.bill?.id)await trash(e.bill.id).catch(()=>{});e.bill=''}
+  if(ef.file){if(!e.folderId){const ex=await ensureFolder(await ensureFolder(await getRoot(),'_MeeshoDashboard'),'expenses');e.folderId=await mkFolder(ex,e.expenseId)}
+   const nm='bill.'+extOf(ef.file.name),f=await uploadFile(e.folderId,nm,ef.file);e.bill={id:f.id,name:nm}}
+  const i=state.expenses.findIndex(x=>x.expenseId===e.expenseId);if(i<0)state.expenses.push(e);else state.expenses[i]=e;
+  await persist();closeModal();render();toast(isNew?'Expense added':'Expense updated')}
+ catch(x){toast('Save failed: '+x.message,'err');$('#saveexp')&&($('#saveexp').textContent='Save Expense');$('#modal').classList.remove('loading')}busy=false}
+const addExpense=saveExpense,updateExpense=saveExpense;
+async function deleteExpense(id){if(!await ask('Delete this expense and its bill?'))return;const e=state.expenses.find(x=>x.expenseId===id);
+ if(e?.folderId)await trash(e.folderId).catch(()=>{});
+ state.expenses=state.expenses.filter(e=>e.expenseId!==id);await persist();closeModal();render();toast('Expense deleted')}
+async function viewExpense(id){const e=state.expenses.find(x=>x.expenseId===id);if(!e)return;
+ modal(`${mh(esc(e.expenseName))}<div class="kv"><span>ID</span><span>${e.expenseId}</span><span>Category</span><span>${esc(e.category)}</span><span>Amount</span><span>${inr(e.amount)}</span><span>Date</span><span>${fdate(e.date)}</span><span>Payment</span><span>${esc(e.paymentMethod)}</span></div><pre class="pd">${esc(e.description)||'No description'}</pre><div id="billv" style="margin-top:12px"></div>`);
+ if(e.bill?.id){$('#billv').textContent='Loading bill…';
+  try{const u=await fileURL(e.bill.id);$('#billv').innerHTML=(/pdf$/i.test(e.bill.name)?`<a class="btn g" href="${u}" target="_blank">Open PDF bill</a>`:`<img src="${u}" style="max-width:100%;border-radius:10px" alt="Bill">`)+` <button class="btn g s" data-act="dlf" data-fid="${esc(e.bill.id)}" data-name="${esc(e.expenseId+'_'+e.bill.name)}">⬇ Download bill</button>`}
+  catch(x){$('#billv').textContent='Could not load bill: '+x.message}}}
+
+/* ===== SALES ===== */
+let editingSale=null;
+function openSaleForm(id){
+ editingSale=id?state.sales.find(o=>o.orderId===id):null;const o=editingSale||{};
+ modal(`${mh(editingSale?'Edit Order':'Add Order')}<div class="row"><div class="fld"><label>Order ID *</label><input id="s-id" value="${esc(o.orderId||generateUniqueId('ORD'))}" ${editingSale?'readonly':''}></div>
+ <div class="fld"><label>Product *</label><input id="s-prod" list="plist" data-on="sprod" value="${esc(o.product)}" placeholder="Choose or type"><datalist id="plist">${state.products.map(p=>`<option value="${esc(p.productName)}">`).join('')}</datalist></div>
+ <div class="fld"><label>Quantity *</label><input id="s-qty" type="number" min="1" step="1" data-on="scalc" value="${o.qty||1}"></div>
+ <div class="fld"><label>Selling price per unit (₹)</label><input id="s-price" type="number" min="0" step="any" data-on="scalc" value="${o.price??''}"></div>
+ <div class="fld"><label>Discount (₹)</label><input id="s-disc" type="number" min="0" step="any" data-on="scalc" value="${o.discount??0}"></div>
+ <div class="fld"><label>Meesho charges (₹)</label><input id="s-mee" type="number" min="0" step="any" data-on="scalc" value="${o.meesho??0}"></div>
+ <div class="fld"><label>Shipping charges (₹)</label><input id="s-ship" type="number" min="0" step="any" data-on="scalc" value="${o.ship??0}"></div>
+ <div class="fld"><label>Other charges (₹)</label><input id="s-oth" type="number" min="0" step="any" data-on="scalc" value="${o.other??0}"></div>
+ <div class="fld"><label>Final customer amount (₹)</label><input id="s-final" readonly></div>
+ <div class="fld"><label>Product cost, total (₹)</label><input id="s-cost" type="number" min="0" step="any" data-on="scost" value="${o.cost??''}" ${editingSale?'data-m="1"':''}></div>
+ <div class="fld"><label>Net profit (₹)</label><input id="s-net" readonly></div>
+ <div class="fld"><label>Order date</label><input id="s-date" type="date" value="${o.date||today()}"></div>
+ <div class="fld"><label>Payment status</label><select id="s-pay">${opts(PAY_ST,o.payStatus||'Pending')}</select></div>
+ <div class="fld"><label>Order status</label><select id="s-st">${opts(ORDER_ST,o.status||'New')}</select></div></div>
+ <div class="fld"><label>Notes</label><textarea id="s-notes" rows="2">${esc(o.notes)}</textarea></div>
+ <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" data-act="close">Cancel</button><button class="btn" data-act="savesale">Save Order</button></div>`);saleCalc()}
+function saleCalc(){const g=i=>num($('#'+i).value),final=g('s-qty')*g('s-price')-g('s-disc');
+ $('#s-final').value=final.toFixed(2);$('#s-net').value=(final-g('s-cost')-g('s-mee')-g('s-ship')-g('s-oth')).toFixed(2)}
+function saleAutoCost(){const c=$('#s-cost');if(c.dataset.m)return;const p=state.products.find(x=>x.productName===$('#s-prod').value);if(p)c.value=(p.purchasePrice*num($('#s-qty').value)).toFixed(2)}
+function addSale(){
+ const g=i=>num($('#'+i).value),id=$('#s-id').value.trim(),prod=$('#s-prod').value.trim();
+ if(!id)return toast('Enter an order ID.','err');if(!prod)return toast('Enter a product.','err');if(!(g('s-qty')>0))return toast('Quantity must be greater than 0.','err');
+ if(!editingSale&&state.sales.some(o=>o.orderId===id))return toast('That order ID already exists.','err');
+ if(['s-price','s-disc','s-mee','s-ship','s-oth','s-cost'].some(i=>g(i)<0))return toast('Amounts cannot be negative.','err');
+ const o={orderId:id,product:prod,qty:g('s-qty'),price:g('s-price'),discount:g('s-disc'),meesho:g('s-mee'),ship:g('s-ship'),other:g('s-oth'),finalAmount:g('s-final'),cost:g('s-cost'),netProfit:g('s-net'),date:$('#s-date').value||today(),payStatus:$('#s-pay').value,status:$('#s-st').value,notes:$('#s-notes').value.trim(),createdAt:editingSale?.createdAt||new Date().toISOString()};
+ const i=state.sales.findIndex(x=>x.orderId===id);if(i<0)state.sales.push(o);else state.sales[i]=o;
+ persist();closeModal();render();toast('Order saved')}
+async function deleteSale(id){if(!await ask('Delete order '+id+'?'))return;state.sales=state.sales.filter(o=>o.orderId!==id);await persist();render();toast('Order deleted')}
+
+/* ===== BACKUP / CSV ===== */
+function exportBackup(){download('meesho-business-backup.json',JSON.stringify({app:'meesho-dashboard',version:1,exportedAt:new Date().toISOString(),data:{...state,products:state.products.map(({thumb,...p})=>p)}},null,2));toast('Backup exported')}
+function importBackup(file){const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result).data;if(!d||!Array.isArray(d.products))throw 0;
+ if(!await ask('Merge this backup into your current data? Records with the same ID are replaced by the backup version.','Import'))return;
+ const mg=(a,b,k)=>{const m=new Map(a.map(x=>[x[k],x]));(b||[]).forEach(x=>m.set(x[k],{...m.get(x[k]),...x}));return[...m.values()]};
+ state.products=mg(state.products,d.products,'catalogId');state.expenses=mg(state.expenses,d.expenses,'expenseId');state.sales=mg(state.sales,d.sales,'orderId');
+ state.settings={customTypes:[...new Set([...state.settings.customTypes,...(d.settings?.customTypes||[])])],customCats:[...new Set([...state.settings.customCats,...(d.settings?.customCats||[])])]};
+ await persist();render();toast('Backup imported')}catch{toast('That file is not a valid backup.','err')}};r.readAsText(file)}
+function exportCSV(k){const defs={products:['catalogId','productName','productType','purchasePrice','sellingPrice','expectedProfit','profitMargin','status','createdAt','folderName'],
+ expenses:['expenseId','expenseName','category','amount','date','paymentMethod','description','bill'],sales:['orderId','product','qty','price','discount','meesho','ship','other','finalAmount','cost','netProfit','date','payStatus','status','notes']};
+ const c=v=>'"'+String(v??'').replace(/"/g,'""')+'"',cols=defs[k];if(!state[k].length)return toast('Nothing to export yet.','err');
+ download('meesho-'+k+'.csv','\ufeff'+[cols.join(','),...state[k].map(r=>cols.map(x=>c(r[x])).join(','))].join('\r\n'),'text/csv');toast('CSV exported')}
+
+/* ===== events ===== */
+const acts={
+ signin:signIn,signout:signOut,sync:()=>syncNow(true),dlall:()=>downloadMedia(state.products),dlp:el=>downloadMedia(state.products.filter(p=>p.catalogId===el.dataset.id)),dlf:el=>downloadOne(el.dataset.fid,el.dataset.name),lv:loadVideo,gdopen:()=>G.rootId&&window.open('https://drive.google.com/drive/folders/'+G.rootId,'_blank'),savecid:()=>{const v=$('#cid').value.trim();if(!v)return toast('Paste your Client ID.','err');localStorage.setItem('mbd_cid',v);location.reload()},close:closeModal,burger:()=>$('#side').classList.toggle('open'),
+  go:el=>showPage(el.dataset.p),addcat:()=>openCatalogForm(),savecat:saveCatalog,view:el=>viewProduct(el.dataset.id),edit:el=>openCatalogForm(el.dataset.id),del:el=>deleteCatalog(el.dataset.id),openf:el=>openFolder(el.dataset.id),
+ dljson:el=>{const{thumb,...p}=state.products.find(x=>x.catalogId===el.dataset.id);download('product-'+p.catalogId+'.json',JSON.stringify(p,null,2))},
+ gal:el=>{const m=$('#mainim');if(m&&el.src){m.src=el.src}},
+ browse:el=>$('#in-'+el.dataset.k).click(),
+ mrm:el=>{const l=mf[el.dataset.k],m=l.splice(+el.dataset.i,1)[0];if(m.id)mf.removed.push(m.id);drawMedia()},
+ mmv:el=>{const l=mf[el.dataset.k],i=+el.dataset.i,j=i+ +el.dataset.d;if(j<0||j>=l.length)return;[l[i],l[j]]=[l[j],l[i]];drawMedia()},
+ mpri:el=>{const l=mf.photos,i=+el.dataset.i;l.unshift(l.splice(i,1)[0]);drawMedia()},
+ addexp:()=>openExpenseForm(),eexp:el=>openExpenseForm(el.dataset.id),vexp:el=>viewExpense(el.dataset.id),dexp:el=>deleteExpense(el.dataset.id),saveexp:saveExpense,
+ rmbill:el=>{ef.removeBill=true;el.parentElement.remove()},
+ addsale:()=>openSaleForm(),esale:el=>openSaleForm(el.dataset.id),dsale:el=>deleteSale(el.dataset.id),savesale:addSale,
+ fp:el=>{ui.f[el.dataset.k]={p:el.dataset.p};render()},
+ expbk:exportBackup,impbk:()=>$('#bkfile').click(),csv:el=>exportCSV(el.dataset.k)};
+const ons={
+ q:el=>{ui.q[el.dataset.k]=el.value;render();const n=$('#'+el.id);n.focus();n.setSelectionRange(n.value.length,n.value.length)},
+ typef:el=>{ui.type=el.value;render()},
+ fd:el=>{ui.f[el.dataset.k][el.dataset.w]=el.value;render()},
+ calc:calcForm,
+ typesel:el=>{if(el.value!=='__new')return;const t=(prompt('New product type name:')||'').trim();
+  if(t){if(!types().some(x=>x.toLowerCase()===t.toLowerCase()))state.settings.customTypes.push(t);persist();const ex=types().find(x=>x.toLowerCase()===t.toLowerCase());el.innerHTML=opts(types(),ex)+'<option value="__new">+ Add Custom Type</option>'}else el.value=types()[0]},
+ catsel:el=>{if(el.value!=='__new')return;const t=(prompt('New expense category:')||'').trim();
+  if(t){if(!cats().some(x=>x.toLowerCase()===t.toLowerCase()))state.settings.customCats.push(t);persist();const ex=cats().find(x=>x.toLowerCase()===t.toLowerCase());el.innerHTML=opts(cats(),ex)+'<option value="__new">+ Add Custom Category</option>'}else el.value=cats()[0]},
+ files:el=>{addFiles(el.dataset.k,[...el.files]);el.value=''},
+ bill:el=>{const f=el.files[0],pv=$('#billprev');pv.innerHTML='';ef.file=null;if(!f)return;
+  if(!/^(image\/(jpeg|png)|application\/pdf)$/.test(f.type)){el.value='';return toast('Bills must be JPG, PNG or PDF.','err')}
+  ef.file=f;const u=URL.createObjectURL(f);pv.innerHTML=f.type==='application/pdf'?`<a href="${u}" target="_blank">Preview PDF (${esc(f.name)})</a>`:`<img src="${u}" style="max-width:220px;border-radius:10px" alt="Bill preview">`},
+ sprod:el=>{const p=state.products.find(x=>x.productName===el.value);if(p&&!num($('#s-price').value))$('#s-price').value=p.sellingPrice;saleAutoCost();saleCalc()},
+ scalc:el=>{saleAutoCost();saleCalc()},scost:el=>{el.dataset.m=el.value===''?'':'1';saleCalc()},
+ impfile:el=>{if(el.files[0])importBackup(el.files[0]);el.value=''}};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(el&&acts[el.dataset.act])acts[el.dataset.act](el,e);
+ else if(e.target.id==='modal')closeModal()});
+['input','change'].forEach(t=>document.addEventListener(t,e=>{const el=e.target;if(!el.dataset?.on)return;
+ const textual=el.type==='search'||el.type==='number'||el.type==='text';if(t==='input'&&!textual&&el.dataset.on!=='fd')return;if(t==='change'&&textual&&el.dataset.on!=='sprod'&&el.dataset.on!=='fd')return;ons[el.dataset.on]?.(el)}));
+document.addEventListener('dragover',e=>{const z=e.target.closest('.dz');if(z){e.preventDefault();z.classList.add('over')}});
+document.addEventListener('dragleave',e=>e.target.closest?.('.dz')?.classList.remove('over'));
+document.addEventListener('drop',e=>{const z=e.target.closest('.dz');if(z){e.preventDefault();z.classList.remove('over');addFiles(z.dataset.k,[...e.dataTransfer.files])}else if(e.dataTransfer?.files.length)e.preventDefault()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#dlg').classList.contains('on'))closeModal()});
+initApp();
+</script>
+</body>
+</html>
