@@ -122,13 +122,13 @@ const hasTok=()=>tok&&Date.now()<tokExp-60000;
 function initAuth(){tc=google.accounts.oauth2.initTokenClient({client_id:clientId(),scope:SCOPE,
  callback:r=>pend&&pend.ok(r),error_callback:e=>pend&&pend.err(e)})}
 function getToken(){if(hasTok())return Promise.resolve(tok);if(tokP)return tokP;
- tokP=new Promise((res,rej)=>{pend={ok:r=>{if(r.error)return rej(new Error(r.error_description||r.error));tok=r.access_token;tokExp=Date.now()+(+r.expires_in||3600)*1000;localStorage.setItem('mbd_gd','1');res(tok)},
+ tokP=new Promise((res,rej)=>{pend={ok:r=>{if(r.error)return rej(new Error(r.error_description||r.error));tok=r.access_token;tokExp=Date.now()+(+r.expires_in||3600)*1000;localStorage.setItem('mbd_gd','1');localStorage.setItem('mbd_tok',JSON.stringify({t:tok,e:tokExp}));res(tok)},
   err:e=>rej(new Error(e.type==='popup_closed'?'Sign-in window was closed.':e.type==='popup_failed_to_open'?'Pop-up blocked. Allow pop-ups for this site and try again.':(e.message||e.type||'Sign-in failed')))};
   tc.requestAccessToken({prompt:''})}).finally(()=>{tokP=null});return tokP}
 async function gfetch(url,opt={},retry=true){
  let t;try{t=await getToken()}catch(e){if(G.phase==='ready'&&!G.authLost){G.authLost=true;render()}throw new Error('Google session expired. Tap Reconnect and try again.')}
  const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
- if(r.status===401&&retry){tok=null;return gfetch(url,opt,false)}
+ if(r.status===401&&retry){tok=null;localStorage.removeItem('mbd_tok');return gfetch(url,opt,false)}
  if(!r.ok){let m='';try{m=(await r.json()).error.message}catch{}throw new Error(m||'Drive error '+r.status)}return r}
 
 /* ===== Drive helpers ===== */
@@ -178,7 +178,7 @@ async function connectDrive(){G.phase='loading';render();
  try{await loadFromDrive();G.phase='ready';render()}catch(e){G.phase='signin';G.err='Could not load from Google Drive: '+e.message;render()}}
 async function signIn(){G.err='';try{await getToken();G.authLost=false;if(G.phase==='ready'){render();return toast('Reconnected')}await connectDrive()}
  catch(e){if(G.phase!=='ready')G.phase='signin';G.err=e.message;render()}}
-function signOut(){tok=null;tokExp=0;localStorage.removeItem('mbd_gd');for(const k in fc)delete fc[k];G.rootId='';
+function signOut(){tok=null;tokExp=0;localStorage.removeItem('mbd_gd');localStorage.removeItem('mbd_tok');for(const k in fc)delete fc[k];G.rootId='';
  state={products:[],expenses:[],sales:[],settings:{customTypes:[],customCats:[]}};G.phase='signin';G.err='';render()}
 async function syncNow(manual){if(busy||G.syncing||(!manual&&!hasTok()))return;G.syncing=true;
  try{await pq;await loadFromDrive();render();manual&&toast('Synced with Google Drive')}catch(e){manual&&toast('Sync failed: '+e.message,'err')}G.syncing=false}
@@ -187,7 +187,9 @@ const waitGIS=()=>new Promise(r=>{let n=0;const t=setInterval(()=>{if(window.goo
 async function initApp(){
  if(!clientId()){G.phase='nocfg';return render()}
  if(!await waitGIS()){G.phase='signin';G.err='Could not load Google sign-in. Check your internet connection.';return render()}
- initAuth();G.phase='signin';render();
+ initAuth();G.phase='signin';
+ try{const o=JSON.parse(localStorage.getItem('mbd_tok'));if(o&&o.e>Date.now()+60000){tok=o.t;tokExp=o.e}}catch{}
+ render();
  if(localStorage.getItem('mbd_gd')){try{await getToken();await connectDrive()}catch{G.phase='signin';render()}}}
 
 /* ===== media download ===== */
@@ -544,6 +546,8 @@ document.addEventListener('dragover',e=>{const z=e.target.closest('.dz');if(z){e
 document.addEventListener('dragleave',e=>e.target.closest?.('.dz')?.classList.remove('over'));
 document.addEventListener('drop',e=>{const z=e.target.closest('.dz');if(z){e.preventDefault();z.classList.remove('over');addFiles(z.dataset.k,[...e.dataTransfer.files])}else if(e.dataTransfer?.files.length)e.preventDefault()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#dlg').classList.contains('on'))closeModal()});
+/* renew the Google token on the user's next tap when it is about to expire (a quick pop-up flash, no login screen) */
+document.addEventListener('click',()=>{if(G.phase==='ready'&&!tokP&&Date.now()>tokExp-300000&&Date.now()-(G.tried||0)>60000){G.tried=Date.now();getToken().then(()=>{G.authLost=false}).catch(()=>{})}},true);
 initApp();
 </script>
 </body>
